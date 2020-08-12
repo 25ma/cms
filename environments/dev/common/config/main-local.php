@@ -7,12 +7,8 @@ return [
          *  - sqlite sqlite:/feehi.db
          */
         'db' => [
-            'class' => yii\db\Connection::className(),
-            'dsn' => 'sqlite:/feehi.db',
-            'username' => 'root',
-            'password' => '',
-            'charset' => 'utf8',
-            'tablePrefix' => "",
+            'class' => '\yii\mongodb\Connection',
+            'dsn' => 'mongodb://192.168.0.222:27017/cms',
         ],
         'mailer' => [
             'class' => yii\swiftmailer\Mailer::className(),
