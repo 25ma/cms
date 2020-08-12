@@ -7,8 +7,10 @@
  */
 
 /**
- * @var $this \yii\web\View
+ * @var $this yii\web\View
  * @var $model common\models\Options
+ * @var $timezones array
+ * @var $frontendSupportLanguages array
  */
 
 use backend\widgets\ActiveForm;
@@ -23,38 +25,32 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Website Setting');
             <?=$this->render('/widgets/_ibox-title')?>
             <div class="ibox-content">
                 <?php $form = ActiveForm::begin(); ?>
-                <?= $form->field($model, 'website_title') ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_url') ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'seo_keywords') ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'seo_description')->textarea() ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_language')->dropDownList([
-                    'zh-CN' => '简体中文',
-                    'zh-TW' => '繁体中文',
-                    'en-US' => 'English'
-                ]) ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_comment')->radioList(Constants::getYesNoItems()) ?>
-                <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_comment_need_verify')->radioList(Constants::getYesNoItems()) ?>
-                <div class="hr-line-dashed"></div>
                 <?php
-                $temp = \DateTimeZone::listIdentifiers();
-                $timezones = [];
-                foreach ($temp as $v) {
-                    $timezones[$v] = $v;
-                }
+                $template = "{label}\n<div class='col-sm-8'>{input}\n{error}</div>\n{hint}<div class='col-sm-2'><span class='tips'> {{%TIPS%}}</span></div>";
                 ?>
-                <?= $form->field($model, 'website_timezone')->chosenSelect($timezones) ?>
+                <?= $form->field($model, 'website_title', ['template' => str_replace("{{%TIPS%}}", "", $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_icp') ?>
+                <?= $form->field($model, 'website_url', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . yii::t('app', 'Only filled in can show picture (Recommend start with // adapt to http or https)'), $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_statics_script')->textarea() ?>
+                <?= $form->field($model, 'seo_keywords', ['template' => str_replace("{{%TIPS%}}", "", $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'website_status')->radioList(Constants::getWebsiteStatusItems()) ?>
+                <?= $form->field($model, 'seo_description', ['template' => str_replace("{{%TIPS%}}", "", $template)])->textarea() ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_language', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . yii::t('app', 'Frontend default language'), $template)])->dropDownList($frontendSupportLanguages) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_comment', ['template' => str_replace("{{%TIPS%}}", "", $template)])->radioList(Constants::getYesNoItems()) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_comment_need_verify', ['template' => str_replace("{{%TIPS%}}", "", $template)])->radioList(Constants::getYesNoItems()) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_email', ['template' => str_replace("{{%TIPS%}}", "", $template)]) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_timezone', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . yii::t('app', 'Frontend timezone'), $template)])->chosenSelect($timezones) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_icp', ['template' => str_replace("{{%TIPS%}}", "", $template)]) ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_statics_script', ['template' => str_replace("{{%TIPS%}}", "", $template)])->textarea() ?>
+                <div class="hr-line-dashed"></div>
+                <?= $form->field($model, 'website_status', ['template' => str_replace("{{%TIPS%}}", "", $template)])->radioList(Constants::getWebsiteStatusItems()) ?>
                 <div class="hr-line-dashed"></div>
                 <?= $form->defaultButtons() ?>
                 <?php ActiveForm::end(); ?>

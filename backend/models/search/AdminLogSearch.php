@@ -8,16 +8,16 @@
 
 namespace backend\models\search;
 
+use Yii;
 use backend\behaviors\TimeSearchBehavior;
 use backend\components\search\SearchEvent;
-use backend\models\AdminLog;
-use Yii;
+use common\models\AdminLog;
 use yii\data\ActiveDataProvider;
 
-class AdminLogSearch extends \backend\models\AdminLog
+class AdminLogSearch extends AdminLog implements SearchInterface
 {
 
-    public $adminUsername;
+    public $admin_username;
 
 
     /**
@@ -29,7 +29,7 @@ class AdminLogSearch extends \backend\models\AdminLog
             [['description', 'created_at'], 'string'],
             [['user_id'], 'integer'],
             [['route'], 'string', 'max' => 255],
-            ['adminUsername', 'safe']
+            ['admin_username', 'safe']
         ];
     }
 
@@ -44,13 +44,14 @@ class AdminLogSearch extends \backend\models\AdminLog
     }
 
     /**
-     * @param $params
+     * @param array $params
+     * @param array $options
      * @return ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
      */
-    public function search($params)
+    public function search(array $params = [], array $options = [])
     {
-        $query = self::find()->orderBy("id desc");
+        $query = AdminLog::find()->orderBy(["id"=>SORT_DESC]);
         $query->joinWith(['user']);
         /** @var ActiveDataProvider $dataProvider */
         $dataProvider = Yii::createObject([
@@ -81,14 +82,16 @@ class AdminLogSearch extends \backend\models\AdminLog
                 ],
             ]
         ]);
+
         $this->load($params);
         if (! $this->validate()) {
             return $dataProvider;
         }
+
         $query->andFilterWhere(['id' => $this->id])
             ->andFilterWhere(['like', 'route', $this->route])
             ->andFilterWhere(['like', 'description', $this->description])
-            ->andFilterWhere(['like', 'username', $this->adminUsername]);
+            ->andFilterWhere(['like', 'username', $this->admin_username]);
         $this->trigger(SearchEvent::BEFORE_SEARCH, Yii::createObject(['class' => SearchEvent::className(), 'query'=>$query]));
         return $dataProvider;
     }

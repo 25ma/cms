@@ -9,7 +9,7 @@
 /**
  * @var $this yii\web\View
  * @var $dataProvider yii\data\ArrayDataProvider
- * @var $searchModel backend\models\form\RbacForm
+ * @var $searchModel \backend\models\search\RBACRoleSearch
  */
 
 use backend\grid\GridView;
@@ -61,9 +61,11 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Roles');
                         ],
                         [
                             'attribute' => 'name',
+                            'label' => Yii::t("app", "Name"),
                         ],
                         [
                             'attribute' => 'description',
+                            'label' => Yii::t("app", "Description"),
                         ],
                         [
                             'class' => SortColumn::className(),
@@ -71,6 +73,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Roles');
                                 return ["name" => $model['name']];
                             },
                             'action' => Url::to(['role-sort']),
+                            'label' => Yii::t("app", "Sort"),
                         ],
                         [
                             'class' => ActionColumn::className(),
@@ -82,6 +85,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Roles');
                                         'onclick' => "viewLayer('" . Url::to(['role-view-layer', 'name' => $model->name]) . "',$(this))",
                                         'data-pjax' => '0',
                                         'class' => 'btn',
+                                        'url' =>  Url::to(['role-view-layer', 'name' => $model->name]),
                                     ]);
                                 },
                                 'update' => function ($url, $model, $key) {

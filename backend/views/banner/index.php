@@ -8,6 +8,7 @@
 /**
  * @var $this yii\web\View
  * @var $dataProvider yii\data\ArrayDataProvider
+ * @var $searchModel \backend\models\search\OptionsSearch
  */
 
 use backend\grid\GridView;
@@ -28,6 +29,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Banner Types');
                 <?= Bar::widget()?>
                 <?= GridView::widget([
                     'dataProvider' => $dataProvider,
+                    'filterModel' => $searchModel,
                     'layout' => '{items}',
                     'columns' => [
                         [
@@ -35,9 +37,11 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Banner Types');
                         ],
                         [
                             'attribute' => 'name',
+                            'label' => Yii::t("app", 'Name'),
                         ],
                         [
                             'attribute' => 'tips',
+                            'label' => Yii::t("app", "Description")
                         ],
                         [
                             'class' => ActionColumn::className(),

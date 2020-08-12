@@ -8,12 +8,20 @@
 
 namespace backend\models\search;
 
-use Yii;
+use backend\behaviors\TimeSearchBehavior;
+use common\models\Menu;
 use yii\data\ArrayDataProvider;
-use backend\models\Menu;
 
-class MenuSearch extends Menu
+
+class MenuSearch extends Menu implements SearchInterface
 {
+
+    public function attributes()
+    {
+        return [
+            "name", "url", "sort", "target", "is_display", "is_absolute_url"
+        ];
+    }
 
     /**
      * @inheritdoc
@@ -21,49 +29,54 @@ class MenuSearch extends Menu
     public function rules()
     {
         return [
-            [['name', 'icon', 'url', 'method'], 'string'],
-            [['sort', 'is_display'], 'integer'],
+            [['name', 'url', "target"], 'string'],
+            [['sort', 'is_display', "is_absolute_url"], 'integer'],
         ];
     }
 
-    /**
-     * @param $params
-     * @return ArrayDataProvider
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function search($params)
+    public function behaviors()
     {
-        $query = Menu::getMenus(Menu::BACKEND_TYPE);
-        $this->load($params);
-        $temp = explode('\\', self::className());
-        $temp = end($temp);
-        if (isset($params[$temp])) {
-            $searchArr = $params[$temp];
-            foreach ($searchArr as $k => $v) {
-                if ($v !== '') {
-                    foreach ($query as $key => $val) {
-                        if (in_array($k, ['sort', 'display'])) {
-                            if ($val[$k] != $v) {
-                                unset($query[$key]);
+        return [
+            TimeSearchBehavior::className()
+        ];
+    }
+
+    public function search(array $params = [], array $options = [])
+    {
+        $menus = $options['dataSource'];
+        if( !$this->load($params) ) {
+            return new ArrayDataProvider([
+                'allModels' => $menus,
+                'pagination' => [
+                    'pageSize' => -1,
+                ],
+            ]);
+        }
+        $classNameArray = explode('\\', self::className());
+        $className = end($classNameArray);
+        if (isset($params[$className])) {
+            $searchParams = $params[$className];
+            foreach ($searchParams as $searchParamKey => $searchParamValue) {
+                if ($searchParamValue !== '') {
+                    foreach ($menus as $key => $menu) {
+                        if (in_array($searchParamKey, ['sort'])) {
+                            if ($menu[$searchParamKey] != $searchParamValue) {
+                                unset($menus[$key]);
                             }
                         } else {
-                            if (strpos($val[$k], $v) === false) {
-                                unset($query[$key]);
+                            if (strpos($menu[$searchParamKey], $searchParamValue) === false) {
+                                unset($menus[$key]);
                             }
                         }
                     }
                 }
             }
         }
-        /** @var ArrayDataProvider $dataProvider */
-        $dataProvider = Yii::createObject([
-            'class' => ArrayDataProvider::className(),
-            'allModels' => $query,
+        return new ArrayDataProvider([
+            'allModels' => $menus,
             'pagination' => [
                 'pageSize' => -1,
             ],
         ]);
-        return $dataProvider;
     }
-
 }

@@ -8,13 +8,15 @@
 
 namespace common\models;
 
+use Yii;
+use common\helpers\Util;
 use common\models\meta\ArticleMetaImages;
 use common\models\meta\ArticleMetaLike;
 use common\models\meta\ArticleMetaTag;
 use feehi\cdn\TargetAbstract;
-use Yii;
 use common\libs\Constants;
 use yii\behaviors\TimestampBehavior;
+use yii\web\UploadedFile;
 
 /**
  * This is the model class for table "{{%article}}".
@@ -61,6 +63,11 @@ class Article extends \yii\db\ActiveRecord
     const ARTICLE_DRAFT = 0;
 
     /**
+     * @var string
+     */
+    public $tag = '';
+
+    /**
      * 需要截取的文章缩略图尺寸
      */
     public static $thumbSizes = [
@@ -101,7 +108,6 @@ class Article extends \yii\db\ActiveRecord
             [['title', 'status'], 'required'],
             [['can_comment', 'visibility'], 'default', 'value' => Constants::YesNo_Yes],
             [['thumb'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg, gif, webp'],
-            [['content'], 'string'],
             [['images'], 'safe'],
             [['created_at', 'updated_at'], 'safe'],
             [
@@ -109,7 +115,6 @@ class Article extends \yii\db\ActiveRecord
                     'title',
                     'sub_title',
                     'summary',
-                    'thumb',
                     'seo_title',
                     'seo_keywords',
                     'seo_description',
@@ -155,7 +160,6 @@ class Article extends \yii\db\ActiveRecord
                 'title',
                 'sub_title',
                 'summary',
-                'content',
                 'thumb',
                 'seo_title',
                 'seo_keywords',
@@ -188,7 +192,6 @@ class Article extends \yii\db\ActiveRecord
                 'sub_title',
                 'summary',
                 'seo_title',
-                'content',
                 'seo_keywords',
                 'seo_description',
                 'status',
@@ -214,7 +217,6 @@ class Article extends \yii\db\ActiveRecord
             'title' => Yii::t('app', 'Title'),
             'sub_title' => Yii::t('app', 'Sub Title'),
             'summary' => Yii::t('app', 'Summary'),
-            'content' => Yii::t('app', 'Content'),
             'thumb' => Yii::t('app', 'Thumb'),
             'seo_title' => Yii::t('app', 'Seo Title'),
             'seo_keywords' => Yii::t('app', 'Seo Keyword'),
@@ -276,13 +278,71 @@ class Article extends \yii\db\ActiveRecord
     }
 
     /**
-     * @return integer
+     * @inheritdoc
      */
-    public function getArticleLikeCount()
+    public function afterValidate()
     {
-        return $this->getArticleLikes()->count('id');
+        if($this->visibility == Constants::ARTICLE_VISIBILITY_SECRET){//加密文章需要设置密码
+            if( empty( $this->password ) ){
+                $this->addError('password', Yii::t('app', "Secret article must set a password"));
+            }
+        }
+        parent::afterValidate();
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function beforeSave($insert)
+    {
+        $insert = $this->getIsNewRecord();
+        Util::handleModelSingleFileUpload($this, 'thumb', $insert, '@thumb', ['thumbSizes'=>self::$thumbSizes]);
+        $this->seo_keywords = str_replace('，', ',', $this->seo_keywords);
+        if ($insert) {
+            $this->author_id = Yii::$app->getUser()->getIdentity()->getId();
+            $this->author_name = Yii::$app->getUser()->getIdentity()->username;
+        }
+
+        $this->type = self::ARTICLE;
+        if( $this->getScenario() === 'page' ){
+            $this->type = self::SINGLE_PAGE;
+        }
+
+        if ($this->thumb) {
+            /** @var TargetAbstract $cdn */
+            $cdn = Yii::$app->get('cdn');
+            $this->thumb = str_replace($cdn->host, '', $this->thumb);
+        }
+        return parent::beforeSave($insert);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        $articleMetaTag = new ArticleMetaTag();
+        $articleMetaTag->setArticleTags($this->id, $this->tag);
+        $articleMetaTag = new ArticleMetaImages();
+        $articleMetaTag->setImages($this->id, $this->images);
+        parent::afterSave($insert, $changedAttributes);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function beforeDelete()
+    {
+        if( !empty( $this->thumb ) ){
+            Util::deleteThumbnails(Yii::getAlias('@frontend/web') . $this->thumb, self::$thumbSizes, true);
+        }
+        Comment::deleteAll(['aid' => $this->id]);
+        return parent::beforeDelete();
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function afterFind()
     {
         if ($this->thumb) {
@@ -295,14 +355,20 @@ class Article extends \yii\db\ActiveRecord
         parent::afterFind();
     }
 
-    public function beforeSave($insert)
+    /**
+     * @return integer
+     */
+    public function getArticleLikeCount()
     {
-        if ($this->thumb) {
-            /** @var TargetAbstract $cdn */
-            $cdn = Yii::$app->get('cdn');
-            $this->thumb = str_replace($cdn->host, '', $this->thumb);
+        return $this->getArticleLikes()->count('id');
+    }
+
+    public function beforeValidate()
+    {
+        if ($this->thumb !== "0") {//为0表示需要删除图片，Util::handleModelSingleFileUpload()会有判断删除图片
+            $this->thumb = UploadedFile::getInstance($this, "thumb");
         }
-        return parent::beforeSave($insert);
+        return parent::beforeValidate();
     }
 
     public function getThumbUrlBySize($width='', $height='')

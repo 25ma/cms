@@ -8,9 +8,9 @@
 
 namespace common\helpers;
 
+use Yii;
 use yii\base\Exception;
 use yii\imagine\Image;
-use Yii;
 use yii\db\ActiveRecord;
 use yii\helpers\FileHelper;
 use yii\web\UploadedFile;
@@ -79,12 +79,12 @@ class Util
      * @param ActiveRecord $model
      * @param $field
      * @param $uploadPath
-     * @param $oldFullname
+     * @param $oldFullName
      * @param array $options
      * @return bool
-     * @throws \yii\base\Exception
+     * @throws yii\base\Exception
      */
-    public static function handleModelSingleFileUploadAbnormal(ActiveRecord &$model, $field, $uploadPath, $oldFullname, $options=[])
+    public static function handleModelSingleFileUploadAbnormal(ActiveRecord &$model, $field, $uploadPath, $oldFullName, $options=[])
     {
         if( !isset($options['successDeleteOld']) ) $options['successDeleteOld'] = true;//成功后删除旧文件
         if( !isset($options['deleteOldFile']) ) $options['deleteOldFile'] = false;//删除旧文件
@@ -106,27 +106,27 @@ class Util
             $model->$field = str_replace(Yii::getAlias('@frontend/web'), '', $fullName);
             $cdn->upload($fullName, $model->$field);
             if(isset($options['thumbSizes'])) self::thumbnails($fullName, $options['thumbSizes']);
-            if( $options['successDeleteOld'] && $oldFullname ){
-                $file = Yii::getAlias('@frontend/web') . $oldFullname;
+            if( $options['successDeleteOld'] && $oldFullName ){
+                $file = Yii::getAlias('@frontend/web') . $oldFullName;
                 if( file_exists($file) && is_file($file) ) unlink($file);
-                if( $cdn->exists( $oldFullname ) ) $cdn->delete($oldFullname);
+                if( $cdn->exists( $oldFullName ) ) $cdn->delete($oldFullName);
                 if(isset($options['thumbSizes'])) self::deleteThumbnails($file, $options['thumbSizes']);
             }
         } else {
             if( $model->$field === '0' ){//删除
-                $file = Yii::getAlias('@frontend/web') . $oldFullname;
+                $file = Yii::getAlias('@frontend/web') . $oldFullName;
                 if( file_exists($file) && is_file($file) ) unlink($file);
-                if( $cdn->exists( $oldFullname ) ) $cdn->delete($oldFullname);
+                if( $cdn->exists( $oldFullName ) ) $cdn->delete($oldFullName);
                 if(isset($options['thumbSizes'])) self::deleteThumbnails($file, $options['thumbSizes']);
                 $model->$field = '';
             }else {
-                $model->$field = $oldFullname;
+                $model->$field = $oldFullName;
             }
         }
         if( $options['deleteOldFile'] ){
-            $file = Yii::getAlias('@frontend/web') . $oldFullname;
+            $file = Yii::getAlias('@frontend/web') . $oldFullName;
             if( file_exists($file) && is_file($file) ) unlink($file);
-            if( $cdn->exists( $oldFullname ) ) $cdn->delete($oldFullname);
+            if( $cdn->exists( $oldFullName ) ) $cdn->delete($oldFullName);
             if(isset($options['thumbSizes'])) self::deleteThumbnails($file, $options['thumbSizes']);
         }
     }
@@ -136,7 +136,7 @@ class Util
      *
      * @param $fullName string 原图路径
      * @param array $thumbSizes 二维数组 如 [["w"=>110,"height"=>"20"],["w"=>200,"h"=>"30"]]则生成两张缩量图，分别为宽110高20和宽200高30
-     * @throws \yii\base\InvalidConfigException
+     * @throws yii\base\InvalidConfigException
      */
     public static function thumbnails($fullName, array $thumbSizes)
     {
@@ -155,7 +155,7 @@ class Util
      * @param $fullName string 原图图片路径
      * @param $thumbSizes array 二维数组 如 [["w"=>110,"height"=>"20"],["w"=>200,"h"=>"30"]]则生成两张缩量图，分别为宽110高20和宽200高30
      * @param $deleteOrigin bool 是否删除原图
-     * @throws \yii\base\InvalidConfigException
+     * @throws yii\base\InvalidConfigException
      */
     public static function deleteThumbnails($fullName, array $thumbSizes, $deleteOrigin=false)
     {

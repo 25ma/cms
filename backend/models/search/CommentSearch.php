@@ -8,16 +8,18 @@
 
 namespace backend\models\search;
 
+use Yii;
+use common\models\Comment;
 use backend\behaviors\TimeSearchBehavior;
 use backend\components\search\SearchEvent;
-use backend\models\Article;
-use Yii;
+use common\models\Article;
 use yii\data\ActiveDataProvider;
 
-class CommentSearch extends \common\models\Comment
+class CommentSearch extends Comment implements SearchInterface
 {
 
-    public $articleTitle;
+    public $article_title;
+    
 
     public function behaviors()
     {
@@ -32,26 +34,26 @@ class CommentSearch extends \common\models\Comment
     public function rules()
     {
         return [
-            [['articleTitle', 'created_at', 'updated_at', 'nickname', 'content'], 'string'],
+            [['article_title', 'created_at', 'updated_at', 'nickname', 'content'], 'string'],
             [['aid', 'status'], 'integer'],
         ];
     }
 
     /**
-     * @param $params
+     * @param array $params
+     * @param array $options
      * @return ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
      */
-    public function search($params)
+    public function search(array $params = [], array $options = [])
     {
-        $query = self::find()->with('article');
+        $query = Comment::find()->with('article');
         /** @var ActiveDataProvider $dataProvider */
         $dataProvider = Yii::createObject([
             'class' => ActiveDataProvider::className(),
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    //'sort' => SORT_ASC,
                     'id' => SORT_DESC,
                 ]
             ]
@@ -65,9 +67,9 @@ class CommentSearch extends \common\models\Comment
             ->andFilterWhere(['aid' => $this->aid])
             ->andFilterWhere(['like', 'content', $this->content]);
 
-        if ($this->articleTitle != '') {
+        if ($this->article_title != '') {
             $articles = Article::find()
-                ->where(['like', 'title', $this->articleTitle])
+                ->where(['like', 'title', $this->article_title])
                 ->select(['id', 'title'])
                 ->indexBy('id')
                 ->asArray()

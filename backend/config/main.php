@@ -16,7 +16,7 @@ return [
     'modules' => [],
     'components' => [
         'user' => [
-            'identityClass' => backend\models\User::className(),
+            'identityClass' => common\models\AdminUser::className(),
             'enableAutoLogin' => false,
             'identityCookie' => ['name' => '_backend_identity'],
             'idParam' => '__backend__id',
@@ -69,6 +69,12 @@ return [
             'enablePrettyUrl' => false,//true 美化路由(注:需要配合web服务器配置伪静态，详见http://doc.feehi.com/install.html), false 不美化路由
             'showScriptName' => true,//隐藏index.php
             'enableStrictParsing' => false,
+        ],
+        'response' => [
+            'as format' => [
+                'class' => common\behaviors\ResponseFormatBehavior::className(),
+                'defaultAjaxResponseFormat' => yii\web\Response::FORMAT_JSON,//if http Accept header is "application/html"
+            ]
         ],
         'i18n' => [
             'translations' => [//多语言包设置
@@ -145,7 +151,7 @@ return [
             ]
         ],
     ],
-    'on beforeRequest' => [feehi\components\Feehi::className(), 'backendInit'],
+    'on beforeRequest' => [common\components\Feehi::className(), 'backendInit'],
     'as access' => [
         'class' => backend\components\AccessControl::className(),
         'allowActions' => [
@@ -158,7 +164,7 @@ return [
             'site/language',
             'admin-user/request-password-reset',
             'admin-user/reset-password',
-            'admin-user/update-self',
+            'admin-user/self-update',
             'assets/*',
             'debug/*',
             'gii/*',

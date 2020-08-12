@@ -8,6 +8,8 @@
 
 namespace console\helpers;
 
+use Exception;
+
 class FileHelper extends \yii\helpers\FileHelper
 {
     public static function unzip($zipFile, $path)
@@ -36,12 +38,18 @@ class FileHelper extends \yii\helpers\FileHelper
         zip_close($resource);
     }
 
-    public static function download($url)
+    public static function request($url, $headers=[], $data=null)
     {
         $ch = curl_init();
         curl_setopt($ch,CURLOPT_URL, $url);
         curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
-        curl_setopt($ch,CURLOPT_SSLVERSION,3);
+        //curl_setopt($ch,CURLOPT_SSLVERSION,3);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        if($data !== null){
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        }
+
         $data = curl_exec($ch);
         $error = curl_error($ch);
         curl_close($ch);

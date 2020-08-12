@@ -5,11 +5,12 @@
  * Email: job@feehi.com
  * Created at: 2016-04-14 12:09
  */
+
 use common\libs\Constants;
 use yii\widgets\DetailView;
 
 /**
- * @var $model backend\models\Article
+ * @var $model common\models\Article
  */
 ?>
 <?= DetailView::widget([
@@ -55,6 +56,10 @@ use yii\widgets\DetailView;
         [
             'format' => 'raw',
             'attribute' => 'content',
+            'value' => function($model){
+                /** @var common\models\Article $model */
+                return $model->articleContent->content;
+            }
         ],
         'created_at:datetime',
         'updated_at:datetime',

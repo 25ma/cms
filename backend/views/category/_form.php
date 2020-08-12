@@ -12,10 +12,12 @@
  */
 
 use backend\widgets\ActiveForm;
-use common\helpers\FamilyTree;
-use common\models\Category;
 use yii\helpers\ArrayHelper;
 use common\helpers\Util;
+
+/**
+ * @var $categories []
+ */
 
 $this->title = "Category";
 $parent_id = Yii::$app->getRequest()->get('parent_id', '');
@@ -33,8 +35,7 @@ if ($parent_id != '') {
                 $disabledOptions = [];
                 if(!$model->getIsNewRecord()){
                     $disabledOptions[$model->id] = ['disabled' => true];
-                    $familyTree = new FamilyTree(Category::getCategories());
-                    $descendants = $familyTree->getDescendants($model->id);
+                    $descendants = $model->getDescendants($model->id);
                     $descendants = ArrayHelper::getColumn($descendants, 'id');
                     foreach ($descendants as $descendant){
                         $disabledOptions[$descendant] = ['disabled' => true];
@@ -43,7 +44,7 @@ if ($parent_id != '') {
                 ?>
                 <?= $form->field($model, 'parent_id')
                     ->label(Yii::t('app', 'Parent Id'))
-                    ->dropDownList(Category::getCategoriesName(), ['options' => $disabledOptions]) ?>
+                    ->dropDownList($categories, ['options' => $disabledOptions]) ?>
                 <div class="hr-line-dashed"></div>
                 <?= $form->field($model, 'name')->textInput(['maxlength' => 64]) ?>
                 <div class="hr-line-dashed"></div>

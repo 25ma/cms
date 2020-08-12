@@ -9,12 +9,10 @@
 namespace common\models;
 
 use Yii;
-use backend\models\form\AdForm;
 use common\libs\Constants;
 use common\helpers\FileDependencyHelper;
-use yii\helpers\ArrayHelper;
+use yii\db\ActiveRecord;
 use yii\helpers\FileHelper;
-use yii\web\NotFoundHttpException;
 use yii\web\UploadedFile;
 
 /**
@@ -29,7 +27,7 @@ use yii\web\UploadedFile;
  * @property integer $autoload
  * @property integer $sort
  */
-class Options extends \yii\db\ActiveRecord
+class Options extends ActiveRecord
 {
 
     const TYPE_SYSTEM = 0;
@@ -39,6 +37,8 @@ class Options extends \yii\db\ActiveRecord
 
     const CUSTOM_AUTOLOAD_NO = 0;
     const CUSTOM_AUTOLOAD_YES = 1;
+
+    const CACHE_DEPENDENCY_TYPE_SYSTEM_FILE_NAME = "options_type_system.txt";
 
 
     /**
@@ -103,7 +103,7 @@ class Options extends \yii\db\ActiveRecord
     {
         $object = Yii::createObject([
             'class' => FileDependencyHelper::className(),
-            'fileName' => 'options.txt',
+            'fileName' => self::CACHE_DEPENDENCY_TYPE_SYSTEM_FILE_NAME,
         ]);
         $object->updateFile();
         parent::afterSave($insert, $changedAttributes);
@@ -152,28 +152,4 @@ class Options extends \yii\db\ActiveRecord
         }
         return parent::beforeSave($insert);
     }
-
-    public static function getBannersByType($name)
-    {
-        $model = Options::findOne(['type'=>self::TYPE_BANNER, 'name'=>$name, 'autoload'=>Constants::Status_Enable]);
-        if( $model == null ) throw new NotFoundHttpException("None banner type named $name");
-        if( $model->value == '' ) $model->value = '[]';
-        $banners = json_decode($model->value, true);
-        ArrayHelper::multisort($banners, 'sort');
-        /** @var $cdn \feehi\cdn\TargetInterface */
-        $cdn = Yii::$app->get('cdn');
-        foreach ($banners as $k => &$banner){
-            if( $banner['status'] == Constants::Status_Desable ) unset($banners[$k]);
-            $banner['img'] = $cdn->getCdnUrl($banner['img']);
-        }
-        return $banners;
-    }
-
-    public static function getAdByName($name)
-    {
-        $ad = AdForm::findOne(['type'=>self::TYPE_AD, 'name'=>$name]);
-        $ad === null && $ad = Yii::createObject( AdForm::className() );
-        return $ad;
-    }
-
 }

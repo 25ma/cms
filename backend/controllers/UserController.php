@@ -8,16 +8,25 @@
 
 namespace backend\controllers;
 
-use backend\actions\ViewAction;
 use Yii;
-use frontend\models\User;
-use frontend\models\search\UserSearch;
+use common\services\UserServiceInterface;
+use backend\actions\ViewAction;
 use backend\actions\CreateAction;
 use backend\actions\UpdateAction;
 use backend\actions\IndexAction;
 use backend\actions\DeleteAction;
 use backend\actions\SortAction;
 
+/**
+ * User management
+ * - data:
+ *          table user
+ * - description:
+ *          frontend register user management
+ *
+ * Class UserController
+ * @package backend\controllers
+ */
 class UserController extends \yii\web\Controller
 {
 
@@ -30,43 +39,66 @@ class UserController extends \yii\web\Controller
      * - item group=用户 category=前台用户 description-post=删除 sort=406 method=post  
      * - item group=用户 category=前台用户 description-post=排序 sort=407 method=post  
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actions()
     {
+        /** @var UserServiceInterface $service */
+        $service = Yii::$app->get(UserServiceInterface::ServiceName);
         return [
             'index' => [
                 'class' => IndexAction::className(),
-                'data' => function(){
-                    /** @var UserSearch $searchModel */
-                    $searchModel = Yii::createObject(UserSearch::className());
-                    $dataProvider = $searchModel->search(Yii::$app->getRequest()->getQueryParams());
+                'data' => function($query)use($service){
+                    $result = $service->getList($query);
                     return [
-                        'dataProvider' => $dataProvider,
-                        'searchModel' => $searchModel,
+                        'dataProvider' => $result['dataProvider'],
+                        'searchModel' => $result['searchModel'],
                     ];
                 }
             ],
             'view-layer' => [
                 'class' => ViewAction::className(),
-                'modelClass' => User::className(),
+                'data' => function($id) use($service){
+                    return [
+                        'model' => $service->getDetail($id),
+                    ];
+                },
             ],
             'create' => [
                 'class' => CreateAction::className(),
-                'modelClass' => User::className(),
-                'scenario' => 'create',
+                'doCreate' => function($postData) use($service){
+                    return $service->create($postData, ['scenario'=>'create']);
+                },
+                'data' => function($createResultModel) use($service){
+                    $model = $createResultModel === null ? $service->newModel(['scenario'=>'create']) : $createResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                },
             ],
             'update' => [
                 'class' => UpdateAction::className(),
-                'modelClass' => User::className(),
-                'scenario' => 'update',
+                'doUpdate' => function($id, $postData) use($service){
+                    return $service->update($id, $postData, ['scenario'=>'update']);
+                },
+                'data' => function($id, $updateResultModel) use($service){
+                    $model = $updateResultModel === null ? $service->getDetail($id, ['scenario'=>'update']) : $updateResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                },
             ],
             'delete' => [
                 'class' => DeleteAction::className(),
-                'modelClass' => User::className(),
+                'doDelete' => function($id) use($service){
+                    return $service->delete($id);
+                },
             ],
             'sort' => [
                 'class' => SortAction::className(),
-                'modelClass' => User::className(),
+                'doSort' => function($id, $sort) use($service){
+                    return $service->sort($id, $sort);
+                },
             ],
         ];
     }

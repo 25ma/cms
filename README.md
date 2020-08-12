@@ -1,4 +1,4 @@
-FeehiCMS  __[(English)](docs/README_EN.md)__  首款编写单元测试、功能测试、验收测试的yii2开源系统
+FeehiCMS  __[(English)](docs/running_screenshot/README_EN.md)__  首款编写单元测试、功能测试、验收测试的yii2开源系统
 ===============================
 
 基于yii2的CMS系统，运行环境与yii2(php>=5.4)一致。FeehiCMS旨在为yii2爱好者提供一个基础功能稳定完善的系统，使开发者更专注于业务功能开发。
@@ -10,48 +10,23 @@ FeehiCMS没有对yii2做任何的修改、封装，但是把yii2的一些优秀�
 [![Build Status](https://www.travis-ci.org/liufee/cms.svg?branch=master)](https://www.travis-ci.org/liufee/cms)
 
 
-更新记录
+演示站点
 -------
-2.0.7 增加后台多图上传;增加文章分类和文章及单页html模版选择;优化前台一些html标签;
+演示站点后台   **用户名:feehicms 密码123456**
+* 后台 [http://demo.cms.feehi.com/admin](http://demo.cms.feehi.com/admin)
+* 前台 [http://demo.cms.feehi.com](http://demo.cms.feehi.com/)
+* api [http://demo.cms.feehi.com/api/articles](http://demo.cms.feehi.com/api/articles)
 
-2.0.6 后台管理适配手机;增加后台代码注释操作运行命令自动生成权限;优化代码;
 
-2.0.5 优化gii生成后台curd;增加列表页搜索框区域;增加form表单laydate、chosenSelect;修复其他bug
-
-2.0.4 修复bug;增强seo
-
-2.0.3 增加后台详情页;增加x.com/cms/frontend/web访问;修复批量删除不显示原因bug
-
-2.0.2 增加cdn;使用layer弹窗替换swal;修复时间范围搜索需要按回车的bug
-
-2.0.1 增加gii自动生成后台crud;优化后台排序;优化其他功能
-
-2.0.0 修复bug;增加1.0.0系列alpha、beta、rc版所有的功能
-
-1.0.0rc2 修复bug
-
-1.0.0rc1 优化使用
-
-1.0.0beta 3 修复bug
-
-1.0.0beta2 增加自定义图片类型设置;优化管理员角色创建和修改
-
-1.0.0beta1 修复bug
-
-1.0.0alpha3 重写文章tag;修复两次model validate
-
-1.0.0alpha2 修复bug 
-
-1.0.0alpha1 增加restful api,单元测试,行为测试,验收测试;替换为yii2最新模板;优化composer安装依赖替换fxp/composer-asset-plugin为Asset Packagist;重写rbac权限管理替换为yii2内置实现
-
-0.1.3 版本已经集成swoole作为FeehiCMS应用服务器，详细配置及使用参见[yii2-swoole](https://www.github.com/liufee/yii2-swoole)
+[更新记录](docs/UPGRADING.md)
+-------
 
 
 帮助
 ---------------
 1. 开发文档[http://doc.feehi.com](http://doc.feehi.com)
 
-2. QQ群 258780872
+2. QQ群 936448696
 
 3. 微信 <br> ![微信](http://img-1251086492.cosgz.myqcloud.com/github/wechat.png)
 
@@ -75,48 +50,64 @@ FeehiCMS没有对yii2做任何的修改、封装，但是把yii2的一些优秀�
  FeehiCMS提供完备的web系统基础通用功能，包括前后台菜单管理,文章标签,广告,banner,缓存,网站设置,seo设置,邮件设置,分类管理,单页...
  
  
-快速体验
-----------------
-1. 使用演示站点
-演示站点后台   **用户名:feehicms 密码123456**
-      * php7.0.0
-        * 后台 [http://demo.cms.feehi.com/admin](http://demo.cms.feehi.com/admin)
-        * 前台 [http://demo.cms.feehi.com](http://demo.cms.feehi.com/)
-        * api [http://demo.cms.feehi.com/api/articles](http://demo.cms.feehi.com/api/articles)
-      * swoole (docker)
-        * swoole演示前台 [http://swoole.demo.cms.qq.feehi.com](http://swoole.demo.cms.qq.feehi.com)
-        * swoole演示后台 [http://swoole-admin.demo.cms.qq.feehi.com](http://swoole-admin.demo.cms.qq.feehi.com)
-      * php7.1.8 (docker)
-        * 备用演示前台1 [http://demo.cms.qq.feehi.com](http://demo.cms.qq.feehi.com)
-        * 备用演示后台1 [http://demo.cms.qq.feehi.com/admin](http://demo.cms.qq.feehi.com/admin)
-        * 备用演示api1 [http://demo.cms.qq.feehi.com/api](http://demo.cms.qq.feehi.com/api/articles)
+使用Docker
+-------
+1.下载镜像
+```bash
+    $ docker pull registry.cn-hangzhou.aliyuncs.com/feehi/cms #FQ后建议直接使用docker pull feehi/cms
+```
+    
+2.创建容器
+```bash
+    $ docker run --name feehicms -h feehicms -itd -v /path/to/data:/data -e DBDSN=sqlite:/data/feehi.db -e TablePrefix=feehi_ -e AdminUsername=admin -e AdminPassword=123456 -p 8080:80 feehi/cms
+```
+以上命令将会自动初始化FeehiCMS，并导入数据库(默认数据库为sqlite)  
+如果需要更使用其他数据库，比如mysql，执行:  
+```bash
+    $ docker run --name feehicms -h feehicms -itd -e DBDSN=mysql:host=mysql-ip;dbname=feehi -e DBUser=dbuser -e DBPassword=dbpassword -e TablePrefix=feehi_ -e AdminUsername=admin -e AdminPassword=123456 -p 8080:80 feehi/cms
+```
+如果需要使用postgresql则将DBDSN改为pgsql:host=pgsql-ip  
+  
+也可以仅初始化FeehiCMS，然后通过web在线安装 
+```bash
+    $ docker run --name feehicms -h feehicms -itd -p 8080:80 feehi/cms -o start
+```
+然后访问http://ip:port/install.php，根据提示选择数据库类型，填写数据库用户名、数据库密码、后台管理员用户名、密码完成安装。  
+  
+  
+以上方式启动的容器只能用作开发环境，容器启动命令最终调用为php -S 0.0.0.0:80,如果用作production，可以执行
+```bash
+    $ docker run --name feehicms -h feehicms -itd -p 8080:80 feehi/cms -m start
+```
+容器将启动php-fpm，并监听9000端口，配合nginx使用。nginx配置大致为
+```bash
+    location ~ \.php$ {
+        ...
+        fastcgi_pass fpm-ip:9000;
+        fastcgi_param  SCRIPT_FILENAME  /usr/local/feehicms/frontend/web$fastcgi_script_name;
+        ...
+    }
+```
+**因为yii2会生成js/css，以及新上传的文件（图片）需要nginx webroot使用php fpm容器同一个文件夹:/usr/local/feehicms/frontend/web**
 
-2. 使用Docker容器
-    ```bash
-    $ docker pull registry.cn-hangzhou.aliyuncs.com/liufee/cms
-    $ docker run --name feehicms -h feehicms -itd -p 80:80 liufee/cms
-    ```
- 
- 
+
 安装
 ---------------
 前置条件: 如未特别说明，本文档已默认您把php命令加入了环境变量，如果您未把php加入环境变量，请把以下命令中的php替换成/path/to/php
+> 无论是使用归档文件还是composer，都有相应阶段让您填入后台管理用户名、密码
 1. 使用归档文件(简单，适合没有yii2经验者)
-    >使用此方式安装，后台超管用户名和密码会在安装过程中让您填入
     1. 下载FeehiCMS源码 [点击此处下载最新版](http://resource-1251086492.cossh.myqcloud.com/Feehi_CMS.zip)
     2. 解压到目录 
-    3. 配置web服务器(参见下面)
+    3. 配置web服务器[web服务器配置](docs/WEBSERVER_CONFIG.md)
     4. 浏览器打开 http://localhost/install.php 按照提示完成安装(若使用php内置web服务a器则地址为 http://localhost:8080/install.php )
     5. 完成
     
-2. 使用composer (`推荐使用此方式安装`)
-    >使用此方式安装，默认的后台超级管理员用户名admin密码123456
-    
-     >composer的安装以及国内镜像设置请点击 [此处](http://www.phpcomposer.com/)
+2. 使用composer (`推荐使用此方式安装`) 
+     >composer的安装以及国内镜像设置请点击 [此处](https://developer.aliyun.com/composer)
      
      >以下命令默认您已全局安装composer，如果您是局部安装的composer:请使用php /path/to/composer.phar来替换以下命令中的composer
      
-     1. 使用composer下创建FeehiCMS项目
+     1. 使用composer创建FeehiCMS项目
         
         ```bash
             $ composer create-project feehi/cms webApp //此命令创建的FeehiCMS项目不能平滑升级新版本(目录结构简单,目前主力维护版本)
@@ -127,59 +118,9 @@ FeehiCMS没有对yii2做任何的修改、封装，但是把yii2的一些优秀�
          $ php ./init --env=Development #初始化yii2框架，线上环境请使用--env=Production
          $ php ./yii migrate/up --interactive=0 #导入FeehiCMS sql数据库，执行此步骤之前请先到common/config/main-local.php修改成正确的数据库配置
          ```
-     3. 配置web服务器(参加下面)
+     3. 配置web服务器[web服务器配置](docs/WEBSERVER_CONFIG.md)
      4. 完成
  
-附:web服务器配置(注意是设置"path/to/frontend/web为根目录)
- 
- * php内置web服务器(仅可用于开发环境,当您的环境中没有web服务器时)
- ```bash
-  cd /path/to/cms
-  php ./yii serve  
-  
-  #至此启动成功，可以通过localhost:8080/和localhost:8080/admin来访问了，在线安装即访问localhost:8080/install.php
- ```
- 
- * Apache
- ```bash
-  DocumentRoot "path/to/frontend/web"
-  <Directory "path/to/frontend/web">
-      # 开启 mod_rewrite 用于美化 URL 功能的支持（译注：对应 pretty URL 选项）
-      RewriteEngine on
-      # 如果请求的是真实存在的文件或目录，直接访问
-      RewriteCond %{REQUEST_FILENAME} !-f
-      RewriteCond %{REQUEST_FILENAME} !-d
-      # 如果请求的不是真实文件或目录，分发请求至 index.php
-      RewriteRule . index.php
-  
-      # ...其它设置...
-  </Directory>
-  ```
-  
- * Nginx
- ```bash
- server {
-     server_name  localhost;
-     root   /path/to/frontend/web;
-     index  index.php index.html index.htm;
-     try_files $uri $uri/ /index.php?$args;
-     
-     location ~ /admin/(?!index.php|index-test.php|static|assets).*$ {
-        rewrite /admin/(.*) /admin/index.php?r=$1 last;
-     }
-     
-     location ~ /api/(?!index.php|index-test.php|static|assets).*$ {
-        rewrite /api/(.*) /api/index.php?r=$1 last;
-     }
- 
-     location ~ \.php$ {
-         fastcgi_pass   127.0.0.1:9000;
-         fastcgi_index  index.php;
-         fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
-         include        fastcgi_params;
-     }
- }
- ```
  
  
 运行测试
@@ -207,33 +148,5 @@ FeehiCMS没有对yii2做任何的修改、封装，但是把yii2的一些优秀�
 *  ......
 
 
-运行效果
+[运行效果](docs/running_screenshot)
 ---------
-![后台](docs/backend.png)
-
-![前台](docs/frontend.png)
-
-![后台文章编辑](docs/backend_article.png)
-
-![后台角色编辑](docs/backend_role.png)
-
-![后台自定义参数](docs/backend_custom_create.png)
-
-![后台文章编辑](docs/backend_custom_setting.png)
-
-![后台文章编辑](docs/backend_log.png)
-
-![后台手机登录](docs/backend_mobile_login.jpg)
-
-![后台手机文章](docs/backend_mobile_article.jpg)
-
-![后台手机文章编辑](docs/backend_mobile_article_edit.jpg)
-
-![后台手机评论详情](docs/backend_mobile_comment_view.jpg)
-
-![前台手机首页](docs/frontend_mobile.jpg)
-
-
-特别鸣谢
----------
-[twitf](https://github.com/twitf) 在后台时间搜索范围提供的建议和代码片段

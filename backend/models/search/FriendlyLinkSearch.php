@@ -9,14 +9,16 @@
 namespace backend\models\search;
 
 use Yii;
+use common\models\FriendlyLink;
 use common\libs\Constants;
 use backend\behaviors\TimeSearchBehavior;
 use backend\components\search\SearchEvent;
-use backend\models\FriendlyLink;
 use yii\data\ActiveDataProvider;
 
-class FriendlyLinkSearch extends \backend\models\FriendlyLink
+
+class FriendlyLinkSearch extends FriendlyLink implements SearchInterface
 {
+
     public function behaviors()
     {
         return [
@@ -37,13 +39,14 @@ class FriendlyLinkSearch extends \backend\models\FriendlyLink
     }
 
     /**
-     * @param $params
+     * @param array $params
+     * @param array $options
      * @return object|ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
      */
-    public function search($params)
+    public function search(array $params = [], array $options = [])
     {
-        $query = FriendlyLink::find();
+        $query = FriendlyLink::find()->orderBy(['sort'=>SORT_ASC, 'id'=>SORT_DESC]);
         $dataProvider = Yii::createObject([
             'class' => ActiveDataProvider::className(),
             'query' => $query,

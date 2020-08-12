@@ -9,9 +9,8 @@
 namespace backend\controllers;
 
 use Yii;
+use common\services\FriendlyLinkServiceInterface;
 use backend\actions\ViewAction;
-use backend\models\search\FriendlyLinkSearch;
-use backend\models\FriendlyLink;
 use backend\actions\CreateAction;
 use backend\actions\UpdateAction;
 use backend\actions\IndexAction;
@@ -19,7 +18,12 @@ use backend\actions\DeleteAction;
 use backend\actions\SortAction;
 
 /**
- * FriendLink controller
+ * friendly link management
+ * - data:
+ *          table friendly_link
+ *
+ * Class FriendLinkController
+ * @package backend\controllers
  */
 class FriendlyLinkController extends \yii\web\Controller
 {
@@ -33,43 +37,67 @@ class FriendlyLinkController extends \yii\web\Controller
      * - item group=其他 category=友情链接 description-post=删除 sort=706 method=post  
      * - item group=其他 category=友情链接 description-post=排序 sort=707 method=post  
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actions()
     {
+        /** @var FriendlyLinkServiceInterface $service */
+        $service =  Yii::$app->get(FriendlyLinkServiceInterface::ServiceName);
         return [
             'index' => [
                 'class' => IndexAction::className(),
-                'data' => function(){
-                    /** @var $searchModel FriendlyLinkSearch */
-                    $searchModel = Yii::createObject( FriendlyLinkSearch::className() );
-                    $dataProvider = $searchModel->search(Yii::$app->getRequest()->getQueryParams());
+                'data' => function(array $query)use($service){
+                    $result = $service->getList($query);
                     return [
-                        'dataProvider' => $dataProvider,
-                        'searchModel' => $searchModel,
+                        'dataProvider' => $result['dataProvider'],
+                        'searchModel' => $result['searchModel'],
                     ];
                 }
             ],
             'view-layer' => [
                 'class' => ViewAction::className(),
-                'modelClass' => FriendlyLink::className(),
+                'data' => function($id)use($service){
+                    return [
+                        'model' => $service->getDetail($id),
+                    ];
+                },
             ],
             'create' => [
                 'class' => CreateAction::className(),
-                'modelClass' => FriendlyLink::className(),
+                'doCreate' => function(array $postData) use($service){
+                    return $service->create($postData);
+                },
+                'data' => function($createResultModel)use($service){
+                    $model = $createResultModel === null ? $service->newModel() : $createResultModel;
+                    return[
+                        'model' => $model,
+                    ];
+                },
             ],
             'update' => [
                 'class' => UpdateAction::className(),
-                'modelClass' => FriendlyLink::className(),
+                'doUpdate' => function($id, array $postData) use($service){
+                    return $service->update($id, $postData);
+                },
+                'data' => function($id, $updateResultModel)use($service){
+                    $model = $updateResultModel === null ? $service->getDetail($id) : $updateResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                },
             ],
             'delete' => [
                 'class' => DeleteAction::className(),
-                'modelClass' => FriendlyLink::className(),
+                'doDelete' => function($id)use($service){
+                    return $service->delete($id);
+                },
             ],
             'sort' => [
                 'class' => SortAction::className(),
-                'modelClass' => FriendlyLink::className(),
+                'doSort' => function($id, $sort)use($service){
+                    return $service->sort($id, $sort);
+                },
             ],
         ];
     }
-
 }

@@ -8,16 +8,24 @@
 
 namespace backend\controllers;
 
+use Yii;
 use backend\actions\ViewAction;
-use backend\models\form\AdForm;
 use backend\actions\CreateAction;
 use backend\actions\UpdateAction;
 use backend\actions\IndexAction;
 use backend\actions\DeleteAction;
 use backend\actions\SortAction;
-use Yii;
-use yii\data\ActiveDataProvider;
+use common\services\AdServiceInterface;
 
+/**
+ * Advertisement management
+ * - data:
+ *          table options with column `type` equal \common\models\Options::TYPE_AD
+ *          column `value` is a json format, like {"ad":"x.png"}
+ *
+ * Class AdController
+ * @package backend\controllers
+ */
 class AdController extends \yii\web\Controller
 {
     /**
@@ -30,41 +38,89 @@ class AdController extends \yii\web\Controller
      * - item group=运营管理 category=广告 description-post=排序 sort=627 method=post  
      *
      * @return array
+     * @throws \yii\base\InvalidConfigException
      */
     public function actions()
     {
+        /** @var AdServiceInterface $service */
+        $service = Yii::$app->get(AdServiceInterface::ServiceName);
+
         return [
             'index' => [
                 'class' => IndexAction::className(),
-                'data' => function(){
-                    $dataProvider = Yii::createObject([
-                        'class' => ActiveDataProvider::className(),
-                        'query' => AdForm::find()->where(['type'=>AdForm::TYPE_AD])->orderBy('sort,id'),
-                    ]);
+                'data' => function($query)use($service){
+                    /** @var array $query query params($_GET) */
+                    $result = $service->getList($query);
                     return [
-                        'dataProvider' => $dataProvider,
+                        'dataProvider' => $result['dataProvider'],
+                        'searchModel' => $result['searchModel'],
                     ];
                 }
             ],
             'view-layer' => [
                 'class' => ViewAction::className(),
-                'modelClass' => AdForm::className(),
+                'data' => function($id)use($service){
+                    /** string|int $id primary key value,usually column `id` value  */
+                    return [
+                        'model' => $service->getDetail($id),
+                    ];
+                },
             ],
             'create' => [
                 'class' => CreateAction::className(),
-                'modelClass' => AdForm::className(),
+                'doCreate' => function($postData) use($service){
+                    /** @var $postData $_POST data */
+                    return $service->create($postData);
+                },
+                'data' => function($createResultModel,  CreateAction $createAction)use($service){
+                    /**
+                     * same path(`/path/create`) have two HTTP method
+                     *  - GET for display create page
+                     *  - POST execute a create operation(write data to database), then redirect to index or show a create error
+                     *
+                     * if $createResultModel equals null means that is a GET request, need to show create page,
+                     * otherwise means POST request, $createResultModel be the model of created(maybe contains data validation error)
+                     */
+                    $model = $createResultModel === null ? $service->newModel() : $createResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                }
             ],
             'update' => [
                 'class' => UpdateAction::className(),
-                'modelClass' => AdForm::className(),
+                'doUpdate' => function($id, $postData, UpdateAction $updateAction) use($service){
+                    return $service->update($id, $postData);
+                },
+                'data' => function($id, $updateResultModel) use($service){
+                    /**
+                     * same path(`/path/update`) have two HTTP method
+                     *  - GET for display update page
+                     *  - POST execute a update operation(write data to database), then redirect to index or show a update error
+                     *
+                     * if $updateResultModel equals null means that is a GET request, need to show update page,
+                     * otherwise means POST request, $updateResultModel be the model of updated(maybe contains data validation error)
+                     */
+                    $model = $updateResultModel === null ? $service->getDetail($id) : $updateResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                }
             ],
             'delete' => [
                 'class' => DeleteAction::className(),
-                'modelClass' => AdForm::className(),
+                'doDelete' => function($id)use($service){
+                    /** string|int $id primary key value,usually column `id` value  */
+                    return $service->delete($id);
+                },
             ],
             'sort' => [
                 'class' => SortAction::className(),
-                'modelClass' => AdForm::className(),
+                'doSort' => function($id, $sort)use($service){
+                    /** string|int $id primary key value,usually column `id` value  */
+                    /** int $sort sort value */
+                    return $service->sort($id, $sort);
+                },
             ],
         ];
     }

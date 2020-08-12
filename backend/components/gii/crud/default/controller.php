@@ -31,10 +31,8 @@ echo "<?php\n";
 namespace <?= StringHelper::dirname(ltrim($generator->controllerClass, '\\')) ?>;
 
 use Yii;
-<?php if (!empty($generator->searchModelClass)): ?>
-use <?=$generator->searchModelClass . ";\n"?>
-<?php endif; ?>
-use <?= $generator->modelClass . ";\n" ?>
+use common\services\<?= $modelClass ?>ServiceInterface;
+use common\services\<?= $modelClass ?>Service;
 use backend\actions\CreateAction;
 use backend\actions\UpdateAction;
 use backend\actions\IndexAction;
@@ -45,7 +43,38 @@ use backend\actions\ViewAction;
 use yii\data\ActiveDataProvider;
 <?php } ?>
 <?php $category = Yii::t("app", Inflector::pluralize(Inflector::camel2words(StringHelper::basename($generator->modelClass)))); ?>
+<?php
+    $idSign = "";
+    $closureIdParam = "";
+    if( !empty($pks) ) {
+        $idSign = "                'primaryKeyIdentity' => ";
+        if (count($pks) === 1) {
+            if ($pks[0] !== "id") {
+                $idSign .= "'" . $pks[0] . "',\n";
+                $closureIdParam = '$' . $pks[0];
+            }else{
+                $idSign = "";
+                $closureIdParam = '$id';
+            }
+        } else {
+            $idSign .= "[";
+            $i = 0;
+            foreach ($pks as $key) {
+                $idSign .= "'" . $key . "',";
+                if($i > 0){
+                    $closureIdParam .= ' $' . $key . ",";
+                }else{
+                    $closureIdParam .= '$' . $key . ",";
+                }
 
+                $i++;
+            }
+            $idSign = rtrim($idSign, ",");
+            $idSign .= "],\n";
+            $closureIdParam = rtrim($closureIdParam, ",");
+        }
+    }
+?>
 /**
  * <?= $controllerClass ?> implements the CRUD actions for <?= $modelClass ?> model.
  */
@@ -63,50 +92,65 @@ class <?= $controllerClass ?> extends \yii\web\<?= StringHelper::basename($gener
     */
     public function actions()
     {
+        /** @var <?=$modelClass?>ServiceInterface $service */
+        $service = Yii::$app->get(<?=$modelClass?>ServiceInterface::ServiceName);
         return [
             'index' => [
                 'class' => IndexAction::className(),
-                'data' => function(){
-                    <?php if (!empty($generator->searchModelClass)): ?>
-
-                        $searchModel = new <?=StringHelper::basename($generator->searchModelClass)?>();
-                        $dataProvider = $searchModel->search(yii::$app->getRequest()->getQueryParams());
-                        return [
-                            'dataProvider' => $dataProvider,
-                            'searchModel' => $searchModel,
-                        ];
-                    <?php else: ?>
-
-                        $dataProvider = new ActiveDataProvider([
-                            'query' => <?= $modelClass ?>::find(),
-                        ]);
-
-                        return [
-                            'dataProvider' => $dataProvider,
-                        ];
-                    <?php endif; ?>
-
+                'data' => function($query, $indexAction) use($service){
+                    $result = $service->getList($query);
+                    return [
+                        'dataProvider' => $result['dataProvider'],
+                        <?php if( !empty($generator->searchModelClass) ) { ?>'searchModel' => $result['searchModel'],<?php } ?>
+                    ];
                 }
             ],
             'create' => [
                 'class' => CreateAction::className(),
-                'modelClass' => <?= $modelClass ?>::className(),
+                'doCreate' => function($postData, $createAction) use($service){
+                    return $service->create($postData);
+                },
+                'data' => function($createResultModel, $createAction) use($service){
+                    $model = $createResultModel === null ? $service->newModel() : $createResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                }
             ],
             'update' => [
                 'class' => UpdateAction::className(),
-                'modelClass' => <?= $modelClass ?>::className(),
+<?php if(!empty($idSign)){echo $idSign;} ?>
+                'doUpdate' => function(<?php if(!empty($closureIdParam)){echo $closureIdParam;echo ", ";}?>$postData, $updateAction) use($service){
+                    return $service->update(<?=$closureIdParam?>, $postData);
+                },
+                'data' => function(<?php if(!empty($closureIdParam)){echo $closureIdParam;echo ", ";}?>$updateResultModel, $updateAction) use($service){
+                    $model = $updateResultModel === null ? $service->getDetail(<?=$closureIdParam?>) : $updateResultModel;
+                    return [
+                        'model' => $model,
+                    ];
+                }
             ],
             'delete' => [
                 'class' => DeleteAction::className(),
-                'modelClass' => <?= $modelClass ?>::className(),
+<?php if(!empty($idSign)){echo $idSign;} ?>
+                'doDelete' => function(<?php if(!empty($closureIdParam)){echo $closureIdParam;echo ", ";}?>$deleteAction) use($service){
+                    return $service->delete(<?=$closureIdParam?>);
+                },
             ],
             'sort' => [
                 'class' => SortAction::className(),
-                'modelClass' => <?= $modelClass ?>::className(),
+                'doSort' => function($id, $sort, $sortAction) use($service){
+                    return $service->sort($id, $sort);
+                },
             ],
             'view-layer' => [
                 'class' => ViewAction::className(),
-                'modelClass' => <?= $modelClass ?>::className(),
+<?php if(!empty($idSign)){echo $idSign;} ?>
+                'data' => function(<?php if(!empty($closureIdParam)){echo $closureIdParam;echo ", ";}?>$viewAction) use($service){
+                    return [
+                        'model' => $service->getDetail(<?=$closureIdParam?>),
+                    ];
+                },
             ],
         ];
     }

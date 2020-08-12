@@ -8,7 +8,7 @@
 
 /**
  * @var $this yii\web\View
- * @var $model \common\models\LoginForm
+ * @var $model backend\models\form\LoginForm
  */
 
 use backend\assets\AppAsset;
@@ -91,13 +91,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 <a href="<?= Url::to(['admin-user/request-password-reset']) ?>">
                     <small><?= Yii::t('app', 'Forgot password') ?></small>
                 </a> |
-                <?php
-                if (Yii::$app->language == 'en-US') {
-                    echo "<a href = " . Url::to(['site/language', 'lang' => 'zh-CN']) . " > 简体中文</a >";
-                } else {
-                    echo "<a href=" . Url::to(['site/language', 'lang' => 'en-US']) . ">English</a>";
-                }
-                ?>
+                <?= $this->render("/widgets/_language-select") ?>
             </p>
 
             <?php ActiveForm::end(); ?>

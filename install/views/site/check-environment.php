@@ -6,6 +6,20 @@
  * Created at: 2016-10-19 12:29
  */
 
+/**
+ * @var $os string
+ * @var $phpversion string
+ * @var $session string
+ * @var $pdo string
+ * @var $pdo_mysql string
+ * @var $curl string
+ * @var $gd string
+ * @var $json string
+ * @var $mbstring string
+ * @var $upload_size string
+ * @var $folders []
+ */
+
 use yii\helpers\Url;
 
 $this->title = Yii::t('install', 'Environment');
@@ -59,19 +73,19 @@ $this->title = Yii::t('install', 'Environment');
                 </td>
                 <td><?= Yii::t('install', 'Required') ?></td>
             </tr>
-            <tr>
+            <!--<tr>
                 <td>
                     PDO_MySQL
                     <a href="https://www.baidu.com/s?wd=开启PDO,PDO_MYSQL扩展" target="_blank">
                         <i class="fa fa-question-circle question"></i>
                     </a>
                 </td>
-                <td><?= Yii::t('install', 'Required') ?></td>
+                <td><?/*= Yii::t('install', 'Required') */?></td>
                 <td>
-                    <?= $pdo_mysql ?>
+                    <?/*= $pdo_mysql */?>
                 </td>
-                <td><?= Yii::t('install', 'Required') ?></td>
-            </tr>
+                <td><?/*= Yii::t('install', 'Required') */?></td>
+            </tr>-->
             <tr>
                 <td>
                     CURL
@@ -141,7 +155,7 @@ $this->title = Yii::t('install', 'Environment');
         <table width="100%">
             <tr>
                 <td class="td1"><?= Yii::t('install', 'Directory File Permission') ?></td>
-                <td class="td1" width="25%"><?= Yii::t('install', 'Writtable') ?></td>
+                <td class="td1" width="25%"><?= Yii::t('install', 'Writable') ?></td>
                 <td class="td1" width="25%"><?= Yii::t('install', 'Readable') ?></td>
             </tr>
             <?php

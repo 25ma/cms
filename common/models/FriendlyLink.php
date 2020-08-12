@@ -8,8 +8,11 @@
 
 namespace common\models;
 
-use yii\db\ActiveRecord;
 use Yii;
+use common\helpers\Util;
+use yii\behaviors\TimestampBehavior;
+use yii\db\ActiveRecord;
+use yii\web\UploadedFile;
 
 /**
  * This is the model class for table "{{%friend_link}}".
@@ -31,10 +34,11 @@ class FriendlyLink extends ActiveRecord
     const DISPLAY_NO = 0;
 
 
-    public function init()
+    public function behaviors()
     {
-        parent::init();
-        $this->on(self::EVENT_AFTER_FIND, [$this, 'afterFindEvent']);
+        return [
+            TimestampBehavior::className(),
+        ];
     }
 
     /**
@@ -78,10 +82,35 @@ class FriendlyLink extends ActiveRecord
         ];
     }
 
-    public function afterFindEvent($event)
+    public function beforeValidate()
+    {
+        if($this->image !== "0") {//为0表示需要删除图片，Util::handleModelSingleFileUpload()会有判断删除图片
+            $this->image = UploadedFile::getInstance($this, "image");
+        }
+        return parent::beforeValidate();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function beforeSave($insert)
+    {
+        Util::handleModelSingleFileUpload($this, 'image', $insert, '@friendlylink/');
+        return parent::beforeSave($insert);
+    }
+
+    public function beforeDelete()
+    {
+        if( !empty( $this->image ) ){
+            Util::deleteThumbnails(Yii::getAlias('@frontend/web/') . str_replace(Yii::$app->params['site']['url'], '', $this->image), [], true);
+        }
+        return parent::beforeDelete();
+    }
+
+    public function afterFind()
     {
         /** @var $cdn \feehi\cdn\TargetAbstract $cdn */
         $cdn = Yii::$app->get('cdn');
-        $event->sender->image = $cdn->getCdnUrl($event->sender->image);
+        $this->image = $cdn->getCdnUrl($this->image);
     }
 }

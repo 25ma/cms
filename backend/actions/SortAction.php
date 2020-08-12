@@ -9,109 +9,85 @@
 namespace backend\actions;
 
 use Yii;
+use stdClass;
 use Closure;
+use backend\actions\helpers\Helper;
+use yii\base\Exception;
 use yii\base\InvalidArgumentException;
+use yii\web\MethodNotAllowedHttpException;
 use yii\web\UnprocessableEntityHttpException;
 
+/**
+ * backend sort
+ *
+ * Class SortAction
+ * @package backend\actions
+ */
 class SortAction extends \yii\base\Action
 {
 
     /**
-     * @var Closure|mixed 模型，如果为模型则直接使用，如果为必包则执行得到模型，为空则实例化modelClass
+     * @var Closure
      */
-    public $model = null;
+    public $doSort = null;
 
     /**
-     * @var string model类名
+     * @var string after success doUpdate tips message showed in page top
      */
-    public $modelClass;
+    public $successTipsMessage = "success";
+
+
+    public function init()
+    {
+        parent::init();
+        if( $this->successTipsMessage === "success"){
+            $this->successTipsMessage = Yii::t("app", "success");
+        }
+    }
 
     /**
-     * @var string 场景
-     */
-    public $scenario = 'default';
-
-    /**
-     * @var string field 排序的字段，如果不传则从post参数的[]内读取
-     */
-    public $field = null;
-
-    /**
-     * @var string|Closure 如果传字符串则执行model的此方法,如果为必包则执行自定义逻辑排序
-     */
-    public $executeMethod = "save";
-
-    /**
-     * 排序操作
+     * sort
      *
+     * @return array|\yii\web\Response
+     * @throws MethodNotAllowedHttpException
+     * @throws UnprocessableEntityHttpException
+     * @throws \yii\base\Exception
      */
     public function run()
     {
         if (Yii::$app->getRequest()->getIsPost()) {
+            if(!$this->doSort instanceof Closure){
+                throw new Exception(__CLASS__ . "::doSort must be closure");
+            }
             $post = Yii::$app->getRequest()->post();
-            if( isset( $post[Yii::$app->getRequest()->csrfParam] ) ) {
+            if (isset($post[Yii::$app->getRequest()->csrfParam])) {
                 unset($post[Yii::$app->getRequest()->csrfParam]);
             }
-            $field = key($post);
             reset($post);
             $temp = current($post);
             $condition = array_keys($temp)[0];
             $value = $temp[$condition];
             $condition = json_decode($condition, true);
-            if( !is_array( $condition ) ) throw new InvalidArgumentException("SortColumn generate html must post data like xxx[{pk:'unique'}]=number");
-            $model = $this->getModel($condition);
-            $field = $this->field !== null ? $this->field : $field;
-            $model->$field = $value;
-            if( $this->executeMethod instanceof Closure){
-                $result = call_user_func($this->executeMethod, $model);
-            }else{
-                if( !is_string($this->executeMethod) ) throw new InvalidArgumentException("SortAction executeMethod must be string or closure");
-                $result = $model->{$this->executeMethod}(false);
-            }
-            if ( $result ) {
-                if( Yii::$app->getRequest()->getIsAjax() ){
-                    return [];
-                }else {
-                    Yii::$app->getSession()->setFlash('success', Yii::t('app', 'Success'));
-                    return $this->controller->goBack();
-                }
-            }else{
-                $errors = $model->getErrors();
-                $err = '';
-                foreach ($errors as $v) {
-                    $err .= $v[0] . '<br>';
-                }
-                if( Yii::$app->getRequest()->getIsAjax() ){
-                    throw new UnprocessableEntityHttpException($err);
-                }else {
-                    Yii::$app->getSession()->setFlash('error', $err);
-                    return $this->controller->goBack();
-                }
-            }
-        }
-    }
+            if (!is_array($condition)) throw new InvalidArgumentException("SortColumn generate html must post data like xxx[{pk:'unique'}]=number");
+            $result = call_user_func_array($this->doSort, [$condition, $value, $this]);
 
-    public function getModel(array $where)
-    {
-        if( $this->model === null ) {
-            /* @var $model \yii\db\ActiveRecord */
-            $model = Yii::createObject([
-                'class' => $this->modelClass,
-            ]);
-            $primaryKeys = $model->getPrimaryKey(true);
-            $condition = [];
-            foreach ($primaryKeys as $key => $abandon) {
-                isset($where[$key]) && $condition[$key] = $where[$key];
+            if (Yii::$app->getRequest()->getIsAjax()) {
+                if( $result === true ){
+                    return ['code'=>0, 'msg'=>'success', 'data'=>new stdClass()];
+                }else{
+                    throw new UnprocessableEntityHttpException(Helper::getErrorString($result));
+                }
+            }else {
+                if ($result === true) {
+                    Yii::$app->getSession()->setFlash('success', $this->successTipsMessage);
+                } else {
+                    Yii::$app->getSession()->setFlash('error', Helper::getErrorString($result));
+                }
+                return $this->controller->goBack();
             }
-            $model = call_user_func([$this->modelClass, 'findOne'], $condition);
-            $model->setScenario( $this->scenario );
+
         }else{
-            $model = $this->model;
-            if( $this->model instanceof \Closure){
-                $model = call_user_func($this->model, $where);
-            }
+            throw new MethodNotAllowedHttpException(Yii::t('app', "Sort must be POST http method"));
         }
-        return $model;
     }
-
 }

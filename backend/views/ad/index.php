@@ -9,6 +9,7 @@
 /**
  * @var $this yii\web\View
  * @var $dataProvider \yii\data\ActiveDataProvider
+ * @var $searchModel \backend\models\search\OptionsSearch
  */
 
 use backend\grid\DateColumn;
@@ -16,7 +17,6 @@ use backend\grid\GridView;
 use backend\grid\SortColumn;
 use backend\grid\StatusColumn;
 use common\libs\Constants;
-use frontend\models\User;
 use backend\widgets\Bar;
 use backend\grid\CheckboxColumn;
 use backend\grid\ActionColumn;
@@ -32,6 +32,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Ad');
                 <?= Bar::widget()?>
                 <?= GridView::widget([
                     'dataProvider' => $dataProvider,
+                    'filterModel' => $searchModel,
                     'columns' => [
                         [
                             'class' => CheckboxColumn::className(),
@@ -43,7 +44,8 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Ad');
                             'attribute' => 'input_type',
                             'value' => function($model){
                                 return Constants::getAdTypeItems($model->input_type);
-                            }
+                            },
+                            'filter' => Constants::getAdTypeItems(),
                         ],
                         [
                             'attribute' => 'ad',
@@ -68,7 +70,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Ad');
                         [
                             'attribute' => 'autoload',
                             'class' => StatusColumn::className(),
-                            'filter' => User::getStatuses(),
+                            'filter' => Constants::getYesNoItems(),
                         ],
                         [
                             'attribute' => 'sort',
@@ -77,10 +79,12 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Ad');
                         [
                             'class' => DateColumn::className(),
                             'attribute' => 'created_at',
+                            'filter' => false,
                         ],
                         [
                             'class' => DateColumn::className(),
                             'attribute' => 'updated_at',
+                            'filter' => false,
                         ],
                         [
                             'class' => ActionColumn::className(),

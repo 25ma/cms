@@ -41,7 +41,7 @@ return [
     'Nickname' => '昵称',
     'Not Audited' => '待审核',
     'Passed' => '通过',
-    'Unpassed' => '未通过',
+    'Not pass' => '未通过',
     'first' => '首页',
     'previous' => '上一页',
     'next' => '下一页',
@@ -50,7 +50,7 @@ return [
     'Really to delete?' => '真的要删除吗？',
     'Are you sure you want to delete this item?' => '确认要删除此项吗?',
     '{attribute} cannot be blank.' => '{attribute}不能为空.',
-    'Allowed not to be deleted, sub level exsited.' => '还有子项存在,不允许被删除',
+    'Allowed not to be deleted, sub level existed.' => '还有子项存在,不允许被删除',
     'Failed' => '失败',
     'Cannot be themselves sub' => '不能是它自己的子类',
     'Send' => '发送',
@@ -70,7 +70,7 @@ return [
     'Draft' => '草稿',
     'Public' => '公开',
     'Reply' => '回复',
-    'Loading, hold on please...' => ' 加载中,请稍等...',
+    'Loading, hold on please...' => '加载中,请稍等...',
     "Id doesn't exit" => 'Id不存在',
     'Back' => '返回',
     'Frontend' => '前台',
@@ -84,6 +84,7 @@ return [
     'IP Address' => 'IP地址',
     'User Id' => '用户Id',
     'None' => '无',
+    'Default' => "默认",
     /*Public*/
 
     /*Login*/
@@ -126,9 +127,9 @@ return [
     'Are you sure you want to disable this item?' => '您确定要禁用此项吗？',
     'Are you sure you want to publish?' => '您确定要发布此文章吗？',
     'Are you sure you want to cancel release?' => '您确定要取消发布此文章吗?',
-    'uncategoried' => '未分类',
-    'Please select' => '请选择',
-    'Please select some' => '请选择一个或多个',
+    'UnClassified' => '未分类',
+    'Please chose' => '请选择',
+    'Please chose some' => '请选择一个或多个',
     'Allowed not to be deleted, some article belongs to this category.' => '不允许被删除，还有文章属于此分类',
     'Secret article must set a password' => '加密文章必须设置密码',
     'Article Id' => '文章Id',
@@ -199,6 +200,10 @@ return [
     'SMTP Setting' => 'SMTP设置',
     'Test' => '测试',
     'Type restrict, please type in after create' => '类型受限，请创建完成后再录入值',
+    '{attribute} must begin with https:// or http:// or //' => '{attribute}必须以https://或者http://或者//开头',
+    'Only filled in can show picture (Recommend start with // adapt to http or https)' => '正确配置前台地址图片才能正常显示(建议以//开头适配https或者http)',
+    'Frontend default language' => '前台默认语言',
+    'Frontend timezone' => '前台时区',
     /*setting*/
 
     /*Log*/
@@ -252,7 +257,7 @@ return [
     'Latest Month' => '最近一个月',
     'Active Users' => '活跃用户',
     'December' => '12月',
-    'Enviroment' => '环境',
+    'Environment' => '环境',
     'PHP Execute Method' => 'PHP执行方式',
     'File Upload Limit' => '文件上传限制',
     'Script Time Limit' => '脚本超时限制',
@@ -270,7 +275,6 @@ return [
     'Administrators' => '管理员',
     'Roles' => '角色',
     'Friendly Links' => '友情链接',
-    'Environment' => '环境',
     'Latest Comments' => '最新评论',
     'Only supported linux system' => '仅支持Linux系统',
     'Total' => '总共',
@@ -316,22 +320,22 @@ return [
     /*user*/
     'There is no user with such email.' => '邮箱没有注册过',
     'Please fill out your email. A link to reset password will be sent there.' => '请填写注册账号时的邮箱，重置密码的链接将会发送到此邮箱',
-    'Check your email for further instructions.' => '重置密码链接已发送到您的邮箱',
     'Reset Password' => '重置密码',
     'Request password reset' => '重置密码',
     'Please fill out the following fields to signup' => '填写以下信息',
     'Please choose your new password' => '请输入您的新密码',
-    'New password was saved.' => '密码修改成功',
     /*user*/
 
     /*admin user*/
     "Admin Users" => "管理员",
     "Can not update default super administrator's role" => '不允许修改系统默认的超级管理的角色',
+    'Check your email for further instructions.' => '重置密码链接已发送到您的邮箱',
+    'New password was saved.' => '密码修改成功',
     /*admin user*/
 
     /*file*/
     'Files' => '文件',
-    'Filesize' => '文件大小',
+    'File size' => '文件大小',
     'Mime' => 'MIME类型',
     'Preview' => '预览',
     'Count' => '次数',

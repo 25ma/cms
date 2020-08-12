@@ -14,7 +14,7 @@ return [
     'controllerNamespace' => 'frontend\controllers',
     'components' => [
         'user' => [
-            'identityClass' => frontend\models\User::className(),
+            'identityClass' => common\models\User::className(),
             'enableAutoLogin' => true,
         ],
         'session' => [
@@ -77,6 +77,12 @@ return [
                 'rss' => 'article/rss',
                 'list/<page:\d+>' => 'site/index',
             ],
+        ],
+        'response' => [
+            'as format' => [
+                'class' => common\behaviors\ResponseFormatBehavior::className(),
+                'defaultAjaxResponseFormat' => yii\web\Response::FORMAT_JSON,//if http Accept header is "application/html"
+            ]
         ],
         'i18n' => [
             'translations' => [
@@ -144,5 +150,5 @@ return [
         ]
     ],
     'params' => $params,
-    'on beforeRequest' => [feehi\components\Feehi::className(), 'frontendInit'],
+    'on beforeRequest' => [common\components\Feehi::className(), 'frontendInit'],
 ];

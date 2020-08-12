@@ -9,13 +9,18 @@
 namespace frontend\controllers;
 
 use Yii;
+use frontend\controllers\helpers\Helper;
+use common\services\CommentServiceInterface;
+use common\services\AdServiceInterface;
+use common\services\ArticleServiceInterface;
 use common\libs\Constants;
 use frontend\models\form\ArticlePasswordForm;
+use yii\filters\VerbFilter;
 use yii\helpers\ArrayHelper;
 use yii\web\Controller;
-use frontend\models\Article;
+use common\models\Article;
 use common\models\Category;
-use frontend\models\Comment;
+use common\models\Comment;
 use yii\data\ActiveDataProvider;
 use common\models\meta\ArticleMetaLike;
 use yii\web\NotFoundHttpException;
@@ -32,6 +37,12 @@ class ArticleController extends Controller
     {
         return [
             [
+                'class' =>VerbFilter::className(),
+                'actions' => [
+                    'comment'  => ['POST'],
+                ]
+            ],
+            [
                 'class' => HttpCache::className(),
                 'only' => ['view'],
                 'lastModified' => function ($action, $params) {
@@ -46,9 +57,9 @@ class ArticleController extends Controller
     }
 
     /**
-     * 分类列表页
+     * article list page
      *
-     * @param string $cat 分类名称
+     * @param string $cat category name
      * @return string
      * @throws NotFoundHttpException
      * @throws \yii\base\InvalidConfigException
@@ -60,13 +71,13 @@ class ArticleController extends Controller
         }
         $where = ['type' => Article::ARTICLE, 'status' => Article::ARTICLE_PUBLISHED];
         if ($cat != '' && $cat != 'index') {
-            if ($cat == Yii::t('app', 'uncategoried')) {
+            if ($cat == Yii::t('app', 'UnClassified')) {
                 $where['cid'] = 0;
             } else {
                 if (! $category = Category::findOne(['alias' => $cat])) {
                     throw new NotFoundHttpException(Yii::t('frontend', 'None category named {name}', ['name' => $cat]));
                 }
-                $descendants = Category::getDescendants($category['id']);
+                $descendants = $category->getDescendants($category['id']);
                 if( empty($descendants) ) {
                     $where['cid'] = $category['id'];
                 }else{
@@ -89,24 +100,28 @@ class ArticleController extends Controller
         ]);
         $template = "index";
         isset($category) && $category->template != "" && $template = $category->template;
-        return $this->render($template, [
+        $data = array_merge([
             'dataProvider' => $dataProvider,
             'type' => ( !empty($cat) ? Yii::t('frontend', 'Category {cat} articles', ['cat'=>$cat]) : Yii::t('frontend', 'Latest Articles') ),
             'category' => isset($category) ? $category->name : "",
-        ]);
+        ], Helper::getCommonInfos());
+        return $this->render($template, $data);
     }
 
     /**
-     * 文章详情
+     * article detail page
      *
      * @param $id
      * @return string
      * @throws \yii\web\NotFoundHttpException
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionView($id)
     {
+        /** @var ArticleServiceInterface $articleService */
+        $articleService = Yii::$app->get(ArticleServiceInterface::ServiceName);
+        $model = $articleService->getArticleById($id);
         /** @var Article $model */
-        $model = Article::findOne(['id' => $id, 'type' => Article::ARTICLE, 'status' => Article::ARTICLE_PUBLISHED]);
         if( $model === null ) throw new NotFoundHttpException(Yii::t("frontend", "Article id {id} is not exists", ['id' => $id]));
         $prev = Article::find()
             ->where(['cid' => $model->cid, 'type' => Article::ARTICLE, 'status' => Article::ARTICLE_PUBLISHED])
@@ -125,7 +140,7 @@ class ArticleController extends Controller
         $recommends = Article::find()
             ->where(['type' => Article::ARTICLE, 'status' => Article::ARTICLE_PUBLISHED])
             ->andWhere(['<>', 'thumb', ''])
-            ->orderBy("rand()")
+            ->orderBy("scan_count")
             ->limit(8)
             ->with('category')
             ->all();
@@ -153,6 +168,8 @@ class ArticleController extends Controller
         $template = "view";
         isset($model->category) && $model->category->article_template != "" && $template = $model->category->article_template;
         $model->template != "" && $template = $model->template;
+        /** @var AdServiceInterface $adService */
+        $adService = Yii::$app->get(AdServiceInterface::ServiceName);
         return $this->render($template, [
             'model' => $model,
             'prev' => $prev,
@@ -160,19 +177,24 @@ class ArticleController extends Controller
             'recommends' => $recommends,
             'commentModel' => $commentModel,
             'commentList' => $commentList,
+            'rightAd1' => $adService->getAdByName("sidebar_right_1"),
+            'rightAd2' => $adService->getAdByName("sidebar_right_2"),
         ]);
     }
 
     /**
-     * 获取文章的点赞数和浏览数
+     * article likes, scan, comment count
      *
      * @param $id
      * @return array
      * @throws NotFoundHttpException
+     * @throws \yii\base\InvalidConfigException
      */
     public function actionViewAjax($id)
     {
-        $model = Article::findOne($id);
+        /** @var ArticleServiceInterface $articleService */
+        $articleService = Yii::$app->get(ArticleServiceInterface::ServiceName);
+        $model = $articleService->getArticleById($id);
         if( $model === null ) throw new NotFoundHttpException("None exists article id");
         return [
             'likeCount' => (int)$model->getArticleLikeCount(),
@@ -182,39 +204,39 @@ class ArticleController extends Controller
     }
 
     /**
-     * 评论
+     * comment
      *
      */
     public function actionComment()
     {
-        if (Yii::$app->getRequest()->getIsPost()) {
-            $commentModel = new Comment();
-            if ($commentModel->load(Yii::$app->getRequest()->post()) && $commentModel->save()) {
-                $avatar = 'https://secure.gravatar.com/avatar?s=50';
-                if ($commentModel->email != '') {
-                    $avatar = "https://secure.gravatar.com/avatar/" . md5($commentModel->email) . "?s=50";
-                }
-                $tips = '';
-                if (Yii::$app->feehi->website_comment_need_verify) {
-                    $tips = "<span class='c-approved'>" . Yii::t('frontend', 'Comment waiting for approved.') . "</span><br />";
-                }
-                $commentModel->afterFind();
-                return "
-                <li class='comment even thread-even depth-1' id='comment-{$commentModel->id}'>
-                    <div class='c-avatar'><img src='{$avatar}' class='avatar avatar-108' height='50' width='50'>
-                        <div class='c-main' id='div-comment-{$commentModel->id}'><p>{$commentModel->content}</p>
-                            {$tips}
-                            <div class='c-meta'><span class='c-author'><a href='{$commentModel->website_url}' rel='external nofollow' class='url'>{$commentModel->nickname}</a></span>  (" . Yii::t('frontend', 'a minutes ago') . ")</div>
-                        </div>
-                    </div>";
-            } else {
-                $temp = $commentModel->getErrors();
-                $str = '';
-                foreach ($temp as $v) {
-                    $str .= $v[0] . "<br>";
-                }
-                return "<font color='red'>" . $str . "</font>";
+        /** @var CommentServiceInterface $service */
+        $service = Yii::$app->get(CommentServiceInterface::ServiceName);
+        $commentModel = $service->newModel();
+        if ($commentModel->load(Yii::$app->getRequest()->post()) && $commentModel->save()) {
+            $avatar = 'https://secure.gravatar.com/avatar?s=50';
+            if ($commentModel->email != '') {
+                $avatar = "https://secure.gravatar.com/avatar/" . md5($commentModel->email) . "?s=50";
             }
+            $tips = '';
+            if (Yii::$app->feehi->website_comment_need_verify) {
+                $tips = "<span class='c-approved'>" . Yii::t('frontend', 'Comment waiting for approved.') . "</span><br />";
+            }
+            $commentModel->afterFind();
+            return "
+            <li class='comment even thread-even depth-1' id='comment-{$commentModel->id}'>
+                <div class='c-avatar'><img src='{$avatar}' class='avatar avatar-108' height='50' width='50'>
+                    <div class='c-main' id='div-comment-{$commentModel->id}'><p>{$commentModel->content}</p>
+                        {$tips}
+                        <div class='c-meta'><span class='c-author'><a href='{$commentModel->website_url}' rel='external nofollow' class='url'>{$commentModel->nickname}</a></span>  (" . Yii::t('frontend', 'a minutes ago') . ")</div>
+                    </div>
+                </div>";
+        } else {
+            $temp = $commentModel->getErrors();
+            $str = '';
+            foreach ($temp as $v) {
+                $str .= $v[0] . "<br>";
+            }
+            return "<font color='red'>" . $str . "</font>";
         }
     }
 
@@ -237,7 +259,7 @@ class ArticleController extends Controller
     }
 
     /**
-     * 点赞
+     * like
      *
      * @return int|string
      */
@@ -251,7 +273,7 @@ class ArticleController extends Controller
     }
 
     /**
-     * rss订阅
+     * rss
      *
      * @return mixed
      * @throws \yii\base\InvalidConfigException

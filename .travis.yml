@@ -2,11 +2,13 @@ language: php
 
 php:
 #- 5.4
-- 5.5
+#- 5.5
 - 5.6
 #- 7.0
 - 7.1
 - 7.2
+- 7.3
+- 7.4
 #  - hhvm
 
 # faster builds on new travis setup not using sudo
@@ -21,7 +23,7 @@ services:
 - mysql
 
 install:
-- travis_retry composer self-update && composer --version
+- travis_retry composer self-update && composer --version && composer clearcache
 - travis_retry composer update --prefer-dist --no-interaction
 # setup application:
 - |
@@ -30,10 +32,11 @@ install:
   sed -i "s/'cookieValidationKey' => ''/'cookieValidationKey' => 'testkey'/" frontend/config/main.php
   sed -i "s/'cookieValidationKey' => ''/'cookieValidationKey' => 'testkey'/" backend/config/main.php
 before_script:
+- sudo service mysql start
 - mysql -e 'CREATE DATABASE cms_test;'
 - echo "extension = imagick.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 - printf "\n" | pecl install -f imagick
-- php yii_test migrate --interactive=0 frontendUri=//localhost
+- php yii_test migrate --interactive=0 frontendUri=//localhost adminUsername=admin adminPassword=123456
 - cp -rf api/tests/acceptance.suite.yml.example api/tests/acceptance.suite.yml
 - cp -rf api/tests/functional.suite.yml.example api/tests/functional.suite.yml
 - cd frontend/web && php -S 0.0.0.0:8888 &

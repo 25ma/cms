@@ -8,7 +8,8 @@
 
 /**
  * @var $this yii\web\View
- * @var $dataProvider frontend\models\Menu
+ * @var $dataProvider common\models\Menu
+ * @var $searchModel backend\models\search\MenuSearch
  */
 
 use backend\grid\DateColumn;
@@ -16,7 +17,8 @@ use backend\grid\GridView;
 use backend\grid\SortColumn;
 use backend\grid\StatusColumn;
 use backend\widgets\Bar;
-use frontend\models\Menu;
+use common\libs\Constants;
+use common\models\Menu;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use backend\grid\CheckboxColumn;
@@ -33,6 +35,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Frontend Menus');
                 <?= Bar::widget() ?>
                 <?= GridView::widget([
                     'dataProvider' => $dataProvider,
+                    'filterModel' => $searchModel,
                     'layout' => '{items}',
                     'columns' => [
                         [
@@ -61,6 +64,10 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Frontend Menus');
                         [
                             'attribute' => 'url',
                             'label' => Yii::t('app', 'Url'),
+                            'value' => function($model){
+                                /** @var Menu $mddel */
+                                return $model->convertJSONStringToRelativeUrl();
+                            }
                         ],
                         [
                             'class' => SortColumn::className(),
@@ -74,6 +81,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Frontend Menus');
                             'class' => StatusColumn::className(),
                             'label' => Yii::t('app', 'Is Display'),
                             'formName' => (new Menu)->formName() . '[is_display]',
+                            'filter' => Constants::getYesNoItems()
                         ],
                         [
                             'class' => DateColumn::className(),

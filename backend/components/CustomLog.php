@@ -8,8 +8,8 @@
  */
 namespace backend\components;
 
-use backend\models\form\RbacForm;
 use yii;
+use common\models\AdminUser;
 use yii\base\ErrorException;
 
 class CustomLog extends \yii\base\Event
@@ -20,9 +20,23 @@ class CustomLog extends \yii\base\Event
 
     const EVENT_CUSTOM = 3;
 
-    public $old = null;
 
-    private $description = null;
+    public $description = null;
+
+    private $adminUserName = null;
+
+    public function init()
+    {
+        parent::init();
+        /** @var AdminUser $identity */
+        $components = Yii::$app->coreComponents();
+        if( !isset($components['user']) ){//cli(console)模式
+            $this->adminUserName = "command(console)";
+        }else {
+            $identity = yii::$app->getUser()->getIdentity();
+            $this->adminUserName = $identity->username;
+        }
+    }
 
     public function getDescription()
     {
@@ -51,7 +65,7 @@ class CustomLog extends \yii\base\Event
     private function create()
     {
         $class = $this->sender->className();
-        $template = $description = '{{%ADMIN_USER%}} [ ' . yii::$app->getUser()->getIdentity()->username . ' ] {{%BY%}} ' . $class . " {{%CREATED%}} {{%RECORD%}}: ";
+        $template = $description = '{{%ADMIN_USER%}} [ ' .  $this->adminUserName  . ' ] {{%BY%}} ' . $class . " {{%CREATED%}} {{%RECORD%}}: ";
         if( $this->description !== null ){
             return $template . $this->description;
         }
@@ -71,7 +85,7 @@ class CustomLog extends \yii\base\Event
     private function delete()
     {
         $class = $this->sender->className();
-        $template = '{{%ADMIN_USER%}} [ ' . yii::$app->getUser()->getIdentity()->username . ' ] {{%BY%}} ' . $class . " {{%DELETED%}} {{%RECORD%}}: ";
+        $template = '{{%ADMIN_USER%}} [ ' .  $this->adminUserName  . ' ] {{%BY%}} ' . $class . " {{%DELETED%}} {{%RECORD%}}: ";
         if( $this->description !== null ){
             return $template . $this->description;
         }
@@ -92,36 +106,14 @@ class CustomLog extends \yii\base\Event
     private function custom()
     {
         $class= $this->sender->className();
-        $template = '{{%ADMIN_USER%}} [ ' . yii::$app->getUser()->getIdentity()->username . ' ] {{%BY%}} ' . $class;
-        switch ($this->sender->className()){
-            case RbacForm::className():
-                $detail = '<br>';
-                if( $this->sender->getScenario() == 'permission' ) {
-                    $which = "权限 {$this->sender->name} ";
-                }else{
-                    $which = "角色 {$this->sender->name} ";
-                }
-                $oldAttributes = $this->old->getAttributes();
-                foreach ($this->sender->activeAttributes() as $field) {
-                    $value = $this->sender->$field;
-                    if (is_array($value)) {
-                        $value = implode(',', $value);
-                    }
-                    $oldValue = $oldAttributes[$field];
-                    if (is_array($oldValue)) {
-                        $oldValue = implode(',', $oldValue);
-                    }
-                    if ($oldValue == $value) {
-                        continue;
-                    }
-                    $detail .= $this->sender->getAttributeLabel($field) . '(' . $field . ') : ' . $oldValue . '=>' . $value . ',<br>';
-                }
-                $detail = substr($detail, 0, -5);
-                $str = " {{%UPDATED%}} $which {{%RECORD%}} " . $detail;
-                return $template . $str;
+        $template = '{{%ADMIN_USER%}} [ ' .  $this->adminUserName  . ' ] {{%BY%}} ' . $class;
+        if ($this->description !== null){
+            return $template . $this->description;
         }
-        if( $this->description === null ) throw new ErrorException("EVENT_CUSTOM must set description property");
-         return $template . $this->description;
+        switch ($this->sender->className()){
+            default:
+                throw new ErrorException("EVENT_CUSTOM must set description property");
+        }
     }
 
 }

@@ -9,7 +9,7 @@
 namespace common\models;
 
 use Yii;
-use common\helpers\FamilyTree;
+use common\libs\FamilyTree;
 use yii\behaviors\TimestampBehavior;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
@@ -31,6 +31,12 @@ use yii\helpers\FileHelper;
  */
 class Category extends \yii\db\ActiveRecord
 {
+
+    use FamilyTree;
+
+    public $level;
+
+    public $prefix_level_name;
 
     /**
      * @inheritdoc
@@ -59,6 +65,7 @@ class Category extends \yii\db\ActiveRecord
             [['name', 'alias', 'remark', 'template', 'article_template'], 'string', 'max' => 255],
             [['alias'],  'match', 'pattern' => '/^[a-zA-Z0-9_]+$/', 'message' => Yii::t('app', 'Must begin with alphabet and can only includes alphabet,_,and number')],
             [['name', 'alias'], 'required'],
+            [['sort'], 'default', 'value' => 0]
         ];
     }
 
@@ -81,93 +88,17 @@ class Category extends \yii\db\ActiveRecord
         ];
     }
 
+    public function getItems()
+    {
+        return self::_getCategories();
+    }
+
     /**
      * @return array|\yii\db\ActiveRecord[]
      */
     protected static function _getCategories()
     {
-        return self::find()->orderBy("sort asc,parent_id asc")->asArray()->all();
-    }
-
-    /**
-     * @return array
-     */
-    public static function getCategories()
-    {
-        $categories = self::_getCategories();
-        $familyTree = new FamilyTree($categories);
-        $array = $familyTree->getDescendants(0);
-        return ArrayHelper::index($array, 'id');
-    }
-
-    /**
-     * @return array
-     */
-    public static function getCategoriesName()
-    {
-        $categories = self::getCategories();
-        $data = [];
-        foreach ($categories as $k => $category){
-            if( isset($categories[$k+1]['level']) && $categories[$k+1]['level'] == $category['level'] ){
-                $name = ' ├' . $category['name'];
-            }else{
-                $name = ' └' . $category['name'];
-            }
-            if( end($categories) == $category ){
-                $sign = ' └';
-            }else{
-                $sign = ' │';
-            }
-            $data[$category['id']] = str_repeat($sign, $category['level']-1) . $name;
-        }
-        return $data;
-    }
-
-    /**
-     * @return array
-     */
-    public static function getMenuCategories($menuCategoryChosen=false)
-    {
-        $categories = self::getCategories();
-        $familyTree = new FamilyTree($categories);
-        $data = [];
-        foreach ($categories as $k => $category){
-            $parents = $familyTree->getAncectors($category['id']);
-            $url = '';
-            if(!empty($parents)){
-                $parents = array_reverse($parents);
-                foreach ($parents as $parent) {
-                    $url .= '/' . $parent['alias'];
-                }
-            }
-            if( isset($categories[$k+1]['level']) && $categories[$k+1]['level'] == $category['level'] ){
-                $name = ' ├' . $category['name'];
-            }else{
-                $name = ' └' . $category['name'];
-            }
-            if( end($categories) == $category ){
-                $sign = ' └';
-            }else{
-                $sign = ' │';
-            }
-            if( $menuCategoryChosen ){
-                $url = '{"0":"article/index","cat":"' . $category['alias'] . '"}';
-            }else{
-                $url = '/'.$category['alias'];
-            }
-            $data[$url] = str_repeat($sign, $category['level']-1) . $name;
-        }
-        return $data;
-    }
-
-    /**
-     * @param $id
-     * @return array
-     */
-    public static function getDescendants($id)
-    {
-        $familyTree = new FamilyTree(self::_getCategories());
-        return $familyTree->getDescendants($id);
+        return self::find()->orderBy(['sort'=>SORT_ASC, "parent_id"=>SORT_ASC])->all();
     }
 
     /**
@@ -175,11 +106,9 @@ class Category extends \yii\db\ActiveRecord
      */
     public function beforeDelete()
     {
-        $categories = self::find()->orderBy("sort asc,parent_id asc")->asArray()->all();
-        $familyTree = new FamilyTree( $categories );
-        $subs = $familyTree->getDescendants($this->id);
+        $subs = $this->getDescendants($this->id);
         if (! empty($subs)) {
-            $this->addError('id', Yii::t('app', 'Allowed not to be deleted, sub level exsited.'));
+            $this->addError('id', Yii::t('app', 'Allowed not to be deleted, sub level existed.'));
             return false;
         }
         if (Article::findOne(['cid' => $this->id]) != null) {
@@ -199,8 +128,7 @@ class Category extends \yii\db\ActiveRecord
                 $this->addError('parent_id', Yii::t('app', 'Cannot be themselves sub'));
                 return false;
             }
-            $familyTree = new FamilyTree(self::_getCategories());
-            $descendants = $familyTree->getDescendants($this->id);
+            $descendants = $this->getDescendants($this->id);
             $descendants = ArrayHelper::getColumn($descendants, 'id');
             if( in_array($this->parent_id, $descendants) ){
                 $this->addError('parent_id', Yii::t('app', 'Cannot be themselves descendants sub'));
@@ -213,16 +141,15 @@ class Category extends \yii\db\ActiveRecord
     public function afterSave($insert, $changedAttributes)
     {
         self::_generateUrlRules();
-        parent::afterSave($insert, $changedAttributes); // TODO: Change the autogenerated stub
+        parent::afterSave($insert, $changedAttributes);
     }
 
-    private static function _generateUrlRules()
+    private function _generateUrlRules()
     {
-        $categories = self::getCategories();
-        $familyTree = new FamilyTree($categories);
+        $categories = self::_getCategories();
         $data = [];
         foreach ($categories as $v){
-            $parents = $familyTree->getAncectors($v['id']);
+            $parents = $this->getAncestors($v['id']);
             $url = '';
             if(!empty($parents)){
                 $parents = array_reverse($parents);
@@ -239,11 +166,11 @@ class Category extends \yii\db\ActiveRecord
         file_put_contents($path . 'category.txt', $json);
     }
 
-    public static function getUrlRules()
+    public function getUrlRules()
     {
         $file = Yii::getAlias('@frontend/runtime/cache/category.txt');
         if( !file_exists($file) ){
-            self::_generateUrlRules();
+            $this->_generateUrlRules();
         }
         return json_decode(file_get_contents($file), true);
     }

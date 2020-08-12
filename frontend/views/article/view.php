@@ -8,12 +8,17 @@
 
 /**
  * @var $this yii\web\View
- * @var $model frontend\models\Article
- * @var $commentModel frontend\models\Comment
- * @var $prev frontend\models\Article
- * @var $next frontend\models\Article
+ * @var $model common\models\Article
+ * @var $commentModel common\models\Comment
+ * @var $prev common\models\Article
+ * @var $next common\models\Article
  * @var $recommends array
  * @var $commentList array
+ */
+
+/**
+ * @var $rightAd1 \backend\models\form\AdForm
+ * @var $rightAd2 \backend\models\form\AdForm
  */
 
 use frontend\widgets\ArticleListView;
@@ -26,27 +31,20 @@ use yii\widgets\ActiveForm;
 
 $this->title = $model->title;
 
-$this->registerMetaTag(['name' => 'keywords', 'content' => $model->seo_keywords], 'keywords');
-$this->registerMetaTag(['name' => 'description', 'content' => $model->seo_description], 'description');
-$this->registerMetaTag(['name' => 'tags', 'content' => call_user_func(function()use($model) {
-    $tags = '';
-    foreach ($model->articleTags as $tag) {
-        $tags .= $tag->value . ',';
-    }
-    return rtrim($tags, ',');
-    }
-)], 'tags');
-$this->registerMetaTag(['property' => 'article:author', 'content' => $model->author_name]);
-$categoryName = $model->category ? $model->category->name : Yii::t('app', 'uncategoried');
+$categoryName = $model->category ? $model->category->name : Yii::t('app', 'UnClassified');
+$categoryAlias = $model->category ? $model->category->alias : Yii::t('app', 'UnClassified');
 
 ViewAsset::register($this);
 ?>
+
+<?=$this->render("_register_meta_tags", ['model' => $model])?>
+
 <div class="content-wrap">
     <div class="content">
         <div class="breadcrumbs">
             <a title="<?=Yii::t('frontend', 'Return Home')?>" href="<?= Yii::$app->getHomeUrl() ?>"><i class="fa fa-home"></i></a>
             <small>&gt;</small>
-            <a href="<?= Url::to(['article/index', 'cat' => $categoryName]) ?>"><?= $categoryName ?></a>
+            <a href="<?= Url::to(['article/index', 'cat' => $categoryAlias]) ?>"><?= $categoryName ?></a>
             <small>&gt;</small>
             <span class="muted"><?= $model->title ?></span>
         </div>
@@ -56,7 +54,7 @@ ViewAsset::register($this);
                 <span id="mute-category" class="muted"><i class="fa fa-list-alt"></i>
                     <a href="<?= Url::to([
                         'article/index',
-                        'cat' => $categoryName
+                        'cat' => $categoryAlias
                     ]) ?>"> <?= $categoryName ?>
                     </a>
                 </span>
@@ -262,7 +260,10 @@ ViewAsset::register($this);
         </div>
     </div>
 </div>
-<?= $this->render('/widgets/_sidebar') ?>
+<?= $this->render('_sidebar', [
+    'rightAd1' => $rightAd1,
+    'rightAd2' => $rightAd2,
+]) ?>
 <?php JsBlock::begin(); ?>
 <script type="text/javascript">
     SyntaxHighlighter.all();

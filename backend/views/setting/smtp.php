@@ -24,17 +24,20 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'SMTP Setting');
             <?=$this->render('/widgets/_ibox-title');?>
             <div class="ibox-content">
                 <?php $form = ActiveForm::begin(); ?>
-                <?= $form->field($model, 'smtp_host') ?>
+                <?php
+                 $template = "{label}\n<div class='col-sm-8'>{input}\n{error}</div>\n{hint}<div class='col-sm-2'><span class='tips'> {{%TIPS%}}</span></div>";
+                ?>
+                <?= $form->field($model, 'smtp_host', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . yii::t('app', 'smtp.xxx.com'), $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'smtp_port') ?>
+                <?= $form->field($model, 'smtp_port', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . yii::t('app', '25/465/587'), $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'smtp_username') ?>
+                <?= $form->field($model, 'smtp_username', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . "x@xx.com", $template)]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'smtp_password')->textInput() ?>
+                <?= $form->field($model, 'smtp_password', ['template' => str_replace("{{%TIPS%}}", "", $template)])->textInput() ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'smtp_nickname')->textInput() ?>
+                <?= $form->field($model, 'smtp_nickname', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . "xx", $template)])->textInput() ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'smtp_encryption') ?>
+                <?= $form->field($model, 'smtp_encryption', ['template' => str_replace("{{%TIPS%}}", "<i class='fa fa-info-circle'></i> " . "tls/ssl", $template)]) ?>
                 <div class="hr-line-dashed"></div>
                 <div class="form-group">
                     <div class="col-sm-4 col-sm-offset-2">
@@ -59,12 +62,16 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'SMTP Setting');
                 method: 'post',
                 data: $("form").serialize(),
                 success: function (data) {
-                    layer.msg("<?=Yii::t('app', 'Success')?>");
+                    if( typeof data == "object" && data.hasOwnProperty("code") && data.code==0) {
+                        layer.msg("<?=Yii::t('app', 'Success')?>");
+                    }else{
+                        layer.msg(data)
+                    }
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     layer.msg(jqXHR.responseJSON.message);
                 },
-                compelete: function () {
+                complete: function () {
                     layer.closeAll('loading');
                 }
             });

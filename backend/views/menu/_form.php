@@ -8,14 +8,13 @@
 
 /**
  * @var $this yii\web\View
- * @var $model backend\models\Menu
+ * @var $model common\models\Menu
+ * @var $parentMenuDisabledOptions []
+ * @var $menusNameWithPrefixLevelCharacters []
  */
 
 use backend\widgets\ActiveForm;
-use common\helpers\FamilyTree;
 use common\libs\Constants;
-use backend\models\Menu;
-use yii\helpers\ArrayHelper;
 
 $this->title = "Backend Menus";
 
@@ -30,25 +29,13 @@ if ($parent_id != '') {
             <?= $this->render('/widgets/_ibox-title') ?>
             <div class="ibox-content">
                 <?php $form = ActiveForm::begin(); ?>
-                <?php
-                    $disabledOptions = [];
-                    if(!$model->getIsNewRecord()){
-                        $disabledOptions[$model->id] = ['disabled' => true];
-                        $familyTree = new FamilyTree(Menu::getMenus(Menu::BACKEND_TYPE));
-                        $descendants = $familyTree->getDescendants($model->id);
-                        $descendants = ArrayHelper::getColumn($descendants, 'id');
-                        foreach ($descendants as $descendant){
-                            $disabledOptions[$descendant] = ['disabled' => true];
-                        }
-                    }
-                ?>
-                <?= $form->field($model, 'parent_id')->label(Yii::t('app', 'Parent Menu Name'))->dropDownList(Menu::getMenusName(Menu::BACKEND_TYPE), ['options' => $disabledOptions]) ?>
+                <?= $form->field($model, 'parent_id')->label(Yii::t('app', 'Parent Menu Name'))->dropDownList($menusNameWithPrefixLevelCharacters, ['options' => $parentMenuDisabledOptions]) ?>
                 <div class="hr-line-dashed"></div>
                 <?= $form->field($model, 'name')->textInput(['maxlength' => 64]) ?>
                 <div class="hr-line-dashed"></div>
                 <?= $form->field($model, 'is_absolute_url')->radioList(Constants::getYesNoItems()) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'url')->textInput(['maxlength' => 512]) ?>
+                <?= $form->field($model, 'url')->textInput(['maxlength' => 512, 'value'=>$model->convertJSONStringToRelativeUrl()]) ?>
                 <div class="hr-line-dashed"></div>
                 <?= $form->field($model, 'icon')->label(Yii::t('app', 'Icon').' <a href="http://fontawesome.io/icons/" target="_blank">url</a>')->textInput(['maxlength' => 64]) ?>
                 <div class="hr-line-dashed"></div>

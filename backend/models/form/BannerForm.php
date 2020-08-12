@@ -9,13 +9,15 @@
 namespace backend\models\form;
 
 use Yii;
-use common\helpers\Util;
 use common\libs\Constants;
-use yii\helpers\ArrayHelper;
-use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 
 class BannerForm extends \common\models\Options
 {
+    public $id;
+
+    public $tips;
+
     public $sign;
 
     public $img;
@@ -29,13 +31,6 @@ class BannerForm extends \common\models\Options
     public $status = Constants::Status_Enable;
 
     public $desc;
-
-    public function init()
-    {
-        $this->on(self::EVENT_BEFORE_INSERT, [$this, 'beforeSaveEvent']);
-        $this->on(self::EVENT_BEFORE_UPDATE, [$this, 'beforeSaveEvent']);
-        $this->on(self::EVENT_AFTER_FIND, [$this, 'afterFindEvent']);
-    }
 
     /**
      * @inheritdoc
@@ -66,141 +61,40 @@ class BannerForm extends \common\models\Options
         ];
     }
 
-    public function scenarios()
+    public function beforeValidate()
     {
-        return ['default'=>['sort', 'status', 'integer', 'sign', 'target', 'link', 'desc', 'img'], 'delete'=>['id', 'sign']];
+        if ($this->img !== "0") {//为0表示需要删除图片，Util::handleModelSingleFileUpload()会有判断删除图片
+            $this->img = UploadedFile::getInstance($this, "img");
+        }
+        return parent::beforeValidate();
     }
 
-    public static function findOne($id)
+    public function setAttributes($values, $safeOnly = true)
     {
-        if( in_array(Yii::$app->controller->action->id, ['banner-sort', 'banner-delete']) ){//删除,排序
-            $model = parent::findOne(Yii::$app->getRequest()->get('id'));
-            $model->sign = $id;
-            return $model;
+        if( is_string($values) ){
+            $banner = json_decode($values, true);
+            $this->sign = $banner['sign'];
+            $this->img = $banner['img'];
+            $this->target = $banner['target'];
+            $this->desc = $banner['desc'];
+            $this->link = $banner['link'];
+            $this->sort = $banner['sort'];
+            $this->status = $banner['status'];
         }else{
-            return parent::findOne($id);
+            parent::setAttributes($values, $safeOnly);
         }
     }
 
-    public function delete()
+    public function getValue()
     {
-        return $this->save();
-    }
-
-    public function afterFindEvent($event)
-    {
-        if(empty($event->sender->value)) {
-            $event->sender->value = [];
-        }else {
-            $temp = json_decode($event->sender->value, true);
-            ArrayHelper::multisort($temp, 'sort');
-            $event->sender->value = $temp;
-            $sign = Yii::$app->getRequest()->get('sign', null);
-            if( $sign === null ){
-                if( Yii::$app->getRequest()->getIsPost() && Yii::$app->controller->action->id === "banner-sort" ){
-                    $condition = array_keys(Yii::$app->getRequest()->post()["sort"])[0];
-                    $temp = json_decode($condition, true);
-                    $sign = $temp['sign'];
-                }
-            }
-            if($sign !== null) {
-                /** @var $cdn \feehi\cdn\TargetAbstract */
-                $cdn = Yii::$app->get('cdn');
-                foreach ($event->sender->value as $value) {
-                    if( $sign === $value['sign'] ){
-                        $event->sender->sign = $value['sign'];
-                        $event->sender->img = $cdn->getCdnUrl($value['img']);
-                        $event->sender->target = $value['target'];
-                        $event->sender->desc = $value['desc'];
-                        $event->sender->link = $value['link'];
-                        $event->sender->sort = $value['sort'];
-                        $event->sender->status = $value['status'];
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-   public static function getBanners($id, $asArray=false)
-    {
-        $model = parent::findOne(['id'=>$id, 'type'=>self::TYPE_BANNER]);
-        if( $model == '' ) throw new NotFoundHttpException("Cannot find id $id");
-        /** @var $cdn \feehi\cdn\TargetAbstract */
-        $cdn = Yii::$app->get('cdn');
-        $models = [];
-        foreach ($model->value as $banner){
-            $temp = [
-                'id' => $id,
-                'sign' => $banner['sign'],
-                'img' => $cdn->getCdnUrl($banner['img']),
-                'target' => $banner['target'],
-                'desc' => $banner['desc'],
-                'link' => $banner['link'],
-                'sort' => $banner['sort'],
-                'status' => $banner['status'],
-            ];
-            $models[$banner['sign']] = $asArray ? $temp : new self($temp);
-        }
-        return $models;
-    }
-
-    public function beforeSaveEvent($event)
-    {
-        $sign = Yii::$app->getRequest()->get('sign', null);
-        if( $sign === null ){
-            if( Yii::$app->getRequest()->getIsPost() && Yii::$app->controller->action->id === "banner-sort" ){
-                $condition = array_keys(Yii::$app->getRequest()->post()["sort"])[0];
-                $temp = json_decode($condition, true);
-                $sign = $temp['sign'];
-            }
-        }
-        if( $sign === null && $event->sender->sign ) $sign = $event->sender->sign;//删除
-        $options = [];
-        $oldFullName = "";
-        if( $sign !== null ){//修改
-            foreach ($event->sender->value as $key => $value){
-                if( $value['sign'] === $sign ){
-                    $oldFullName = $value['img'];
-                }
-            }
-            if( $event->sender->getScenario() === 'delete' ) $options['deleteOldFile'] = true;
-        }
-        Util::handleModelSingleFileUploadAbnormal($event->sender, 'img', '@uploads/setting/banner/', $oldFullName, $options);
-        $data = [
-            'img' => $event->sender->img,
-            'target' => $event->sender->target,
-            'desc' => $event->sender->desc,
-            'link' => $event->sender->link,
-            'sort' => $event->sender->sort,
-            'status' => $event->sender->status,
+        return [
+            'sign' => $this->sign ? $this->sign : uniqid(),
+            'img' => $this->img,
+            'target' => $this->target,
+            'desc' => $this->desc,
+            'link' => $this->link,
+            'sort' => $this->sort,
+            'status' => $this->status,
         ];
-        if( $sign === null ){//新增
-            $data['sign'] = uniqid();
-            $temp = $event->sender->value;
-            $temp[] = $data;
-            $event->sender->value = $temp;
-        }else{
-            $temp = $event->sender->value;
-            foreach ($event->sender->value as $key => $value){
-                if( $value['sign'] === $sign ){
-                    if( $event->sender->getScenario() === 'delete'){
-                        unset($temp[$key]);
-                    }else {
-                        $data['sign'] = $sign;
-                        $temp[$key] = $data;
-                    }
-                    break;
-                }
-                if( count($event->sender->value) - 1 === $key ) throw new NotFoundHttpException("Id $this->id does not exists sign $sign");
-            }
-            $event->sender->value = $temp;
-        }
-        $event->sender->value = json_encode($event->sender->value);
-    }
-
-    public function getBannerType()
-    {
-        return $this->hasOne(self::className(), ['id' => 'id']);
     }
 }

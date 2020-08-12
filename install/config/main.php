@@ -1,7 +1,8 @@
 <?php
 $params = array_merge(
     require(__DIR__ . '/../../common/config/params.php'),
-    require(__DIR__ . '/../../common/config/params-local.php')
+    require(__DIR__ . '/../../common/config/params-local.php'),
+    require(__DIR__ . '/params.php')
 );
 
 $config = [
@@ -20,6 +21,16 @@ $config = [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'qxOH-LMMrJJ_unqJzWsPO1eL39JF0cnK',
             'csrfParam' =>'_csrf_install',
+        ],
+        'log' => [//此项具体详细配置，请访问http://wiki.feehi.com/index.php?title=Yii2_log
+            'traceLevel' => 3,
+            'targets' => [
+                [
+                    'class' => yii\log\FileTarget::className(),//当触发levels配置的错误级别时，保存到日志文件
+                    'levels' => ['error', 'warning'],
+                    'logFile' => '@runtime/logs/app.log',
+                ]
+            ],
         ],
         'i18n' => [
             'translations' => [

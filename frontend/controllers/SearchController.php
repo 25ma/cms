@@ -8,9 +8,10 @@
 
 namespace frontend\controllers;
 
-use common\models\meta\ArticleMetaTag;
 use Yii;
-use frontend\models\Article;
+use frontend\controllers\helpers\Helper;
+use common\models\meta\ArticleMetaTag;
+use common\models\Article;
 use yii\helpers\Html;
 use yii\web\Controller;
 use yii\data\ActiveDataProvider;
@@ -19,7 +20,7 @@ class SearchController extends Controller
 {
 
     /**
-     * 搜索
+     * search
      *
      * @return string
      */
@@ -38,10 +39,11 @@ class SearchController extends Controller
                 ]
             ]
         ]);
-        return $this->render('/article/index', [
+        $data = array_merge([
             'dataProvider' => $dataProvider,
             'type' => Yii::t('frontend', 'Search keyword {keyword} results', ['keyword'=>Html::encode($keyword)]),
-        ]);
+        ], Helper::getCommonInfos());
+        return $this->render('/article/index', $data);
     }
 
     public function actionTag($tag='')
@@ -59,9 +61,11 @@ class SearchController extends Controller
                 ]
             ]
         ]);
-        return $this->render('/article/index', [
+        $data = array_merge([
             'dataProvider' => $dataProvider,
-            'type' => Yii::t('frontend', 'Tag {tag} related articles', ['tag'=>$tag]),
-        ]);
+            'type' => Yii::t('frontend', 'Tag {tag} related articles', ['tag'=>Html::encode($tag)]),
+
+        ], Helper::getCommonInfos());
+        return $this->render('/article/index', $data);
     }
 }

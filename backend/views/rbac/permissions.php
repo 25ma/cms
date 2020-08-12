@@ -9,7 +9,7 @@
 /**
  * @var $this yii\web\View
  * @var $dataProvider yii\data\ArrayDataProvider
- * @var $searchModel backend\models\search\RbacFormSearch
+ * @var $searchModel \backend\models\search\RBACPermissionSearch
  */
 
 use backend\grid\GridView;
@@ -61,29 +61,35 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Permissions');
                         ],
                         [
                             'attribute' => 'group',
+                            'label' => Yii::t("app", "Group"),
                         ],
                         [
                             'attribute' => 'category',
+                            'label' => Yii::t("app", "Category"),
                         ],
                         [
                             'attribute' => 'route',
+                            'label' => Yii::t("app", "Route"),
                         ],
                         [
                             'attribute' => 'method',
                             'filter' => [
                                 'GET' => 'GET',
                                 'POST' => 'POST',
-                            ]
+                            ],
+                            'label' => Yii::t("app", "HTTP Method"),
                         ],
                         [
                             'attribute' => 'description',
+                            'label' => Yii::t("app", "Description"),
                         ],
                         [
                             'class' => SortColumn::className(),
                             'primaryKey' => function($model){
                                 return ["name" => $model['name']];
                             },
-                            'action' => Url::to(['permission-sort'])
+                            'action' => Url::to(['permission-sort']),
+                            'label' => Yii::t("app", "Sort"),
                         ],
                         [
                             'class' => ActionColumn::className(),
@@ -95,6 +101,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Permissions');
                                         'onclick' => "viewLayer('" . Url::to(['permission-view-layer', 'name' => $model->name]) . "',$(this))",
                                         'data-pjax' => '0',
                                         'class' => 'btn',
+                                        'url' => Url::to(['permission-view-layer', 'name' => $model->name]),
                                     ]);
                                 },
                                 'update' => function ($url, $model, $key) {

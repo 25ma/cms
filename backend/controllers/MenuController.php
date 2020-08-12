@@ -8,18 +8,27 @@
 
 namespace backend\controllers;
 
-use backend\actions\ViewAction;
 use Yii;
-use backend\models\Menu;
-use backend\models\search\MenuSearch;
+use backend\actions\ViewAction;
+use common\services\MenuServiceInterface;
+use common\models\Menu;
 use backend\actions\CreateAction;
 use backend\actions\UpdateAction;
 use backend\actions\IndexAction;
 use backend\actions\DeleteAction;
 use backend\actions\SortAction;
+use yii\helpers\ArrayHelper;
 
 /**
- * Menu controller
+ * Menu management
+ * - data:
+ *          table menu
+ *          column `type` value is \common\models\Menu::TYPE_BACKEND records
+ * - description:
+ *          backend menu management
+ *
+ * Class MenuController
+ * @package backend\controllers
  */
 class MenuController extends \yii\web\Controller
 {
@@ -33,49 +42,82 @@ class MenuController extends \yii\web\Controller
      * - item group=菜单 category=后台 description-post=删除 sort=216 method=post  
      * - item group=菜单 category=后台 description-post=排序 sort=217 method=post  
      * @return array
+     *
+     * @throws \yii\base\InvalidConfigException
      */
     public function actions()
     {
+        /** @var MenuServiceInterface $service */
+        $service = Yii::$app->get(MenuServiceInterface::ServiceName);
         return [
             'index' => [
                 'class' => IndexAction::className(),
-                'data' => function(){
-                    /** @var MenuSearch $searchModel */
-                    $searchModel = Yii::createObject([
-                        'class' => MenuSearch::className(),
-                        'scenario' => 'backend'
-                    ]);
-                    $dataProvider = $searchModel->search( Yii::$app->getRequest()->getQueryParams() );
+                'data' => function(array $query)use($service){
+                    $result = $service->getList($query, ['type'=>Menu::TYPE_BACKEND]);
                     $data = [
-                        'dataProvider' => $dataProvider,
-                        'searchModel' => $searchModel,
+                        'dataProvider' => $result['dataProvider'],
+                        'searchModel' => $result['searchModel'],
                     ];
                     return $data;
                 }
             ],
             'view-layer' => [
                 'class' => ViewAction::className(),
-                'modelClass' => Menu::className(),
-                'scenario' => 'backend',
+                'data' => function($id)use($service){
+                    return [
+                        'model'=>$service->getDetail($id)
+                    ];
+                },
             ],
             'create' => [
                 'class' => CreateAction::className(),
-                'modelClass' => Menu::className(),
-                'scenario' => 'backend',
+                'doCreate' => function($postData)use($service) {
+                    return $service->create($postData, ['type' => Menu::TYPE_BACKEND]);
+                },
+                'data' => function($createResultModel) use($service){
+                    $model = $createResultModel === null ? $service->newModel(['type'=> Menu::TYPE_BACKEND]) : $createResultModel;
+                    return [
+                        'model'=>$model,
+                        'menusNameWithPrefixLevelCharacters' => ArrayHelper::getColumn($service->getLevelMenusWithPrefixLevelCharacters(Menu::TYPE_BACKEND), "prefix_level_name"),
+                        'parentMenuDisabledOptions' => [],
+                    ];
+                },
             ],
             'update' => [
                 'class' => UpdateAction::className(),
-                'modelClass' => Menu::className(),
-                'scenario' => 'backend',
+                'doUpdate' => function($id, $postData)use($service) {
+                    return $service->update($id, $postData);
+                },
+                'data' => function($id, $updateResultModel)use($service){
+                    $model = $updateResultModel === null ? $service->getDetail($id) : $updateResultModel;
+
+                    $parentMenuDisabledOptions = [];
+                    $parentMenuDisabledOptions[$id] = ['disabled' => true];//cannot be themselves' sub menu
+
+                    $descendants = $model->getDescendants($id, Menu::TYPE_BACKEND);
+                    $descendants = ArrayHelper::getColumn($descendants, 'id');
+                    foreach ($descendants as $descendant){//cannot be themselves's sub menu's menu
+                        $parentMenuDisabledOptions[$descendant] = ['disabled' => true];
+                    }
+
+                    return [
+                        'model' => $model,
+                        'menusNameWithPrefixLevelCharacters' => ArrayHelper::getColumn($service->getLevelMenusWithPrefixLevelCharacters(Menu::TYPE_BACKEND), "prefix_level_name"),
+                        'parentMenuDisabledOptions' => $parentMenuDisabledOptions,
+                    ];
+                },
             ],
             'delete' => [
                 'class' => DeleteAction::className(),
-                'modelClass' => Menu::className(),
+                'doDelete' => function($id)use($service){
+                    return $service->delete($id);
+                },
             ],
             'sort' => [
                 'class' => SortAction::className(),
-                'modelClass' => Menu::className(),
-                'scenario' => 'backend',
+                'doSort' => function($id, $sort)use($service){
+                    return $service->sort($id, $sort);
+                },
             ],
         ];
     }

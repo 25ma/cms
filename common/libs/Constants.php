@@ -44,7 +44,7 @@ class Constants
         $items = [
             self::COMMENT_INITIAL => Yii::t('app', 'Not Audited'),
             self::COMMENT_PUBLISH => Yii::t('app', 'Passed'),
-            self::COMMENT_RUBISSH => Yii::t('app', 'Unpassed'),
+            self::COMMENT_RUBISSH => Yii::t('app', 'Not pass'),
         ];
         return self::getItems($items, $key);
     }
@@ -121,13 +121,13 @@ class Constants
     }
 
     const Status_Enable = 1;
-    const Status_Desable = 0;
+    const Status_Disable = 0;
 
     public static function getStatusItems($key = null)
     {
         $items = [
             self::Status_Enable => Yii::t('app', 'Enable'),
-            self::Status_Desable => Yii::t('app', 'Disable'),
+            self::Status_Disable => Yii::t('app', 'Disable'),
         ];
         return self::getItems($items, $key);
     }

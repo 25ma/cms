@@ -8,7 +8,7 @@
 
 /**
  * @var $this yii\web\View
- * @var $dataProvider backend\models\Comment
+ * @var $dataProvider common\models\Comment
  * @var $searchModel backend\models\search\CommentSearch
  */
 
@@ -17,7 +17,7 @@ use backend\grid\GridView;
 use common\libs\Constants;
 use yii\helpers\Html;
 use backend\widgets\Bar;
-use backend\models\Comment;
+use common\models\Comment;
 use backend\grid\CheckboxColumn;
 use backend\grid\ActionColumn;
 
@@ -46,7 +46,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Comments');
                             'attribute' => 'aid',
                         ],
                         [
-                            'attribute' => 'articleTitle',
+                            'attribute' => 'article_title',
                             'label' => Yii::t('app', 'Article Title'),
                             'value' => function ($model) {
                                 return $model->article->title;
@@ -106,7 +106,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Comments');
                                             'data-method' => 'post',
                                             'data-pjax' => '0',
                                             'data-params' => [
-                                                $comment->formName() . '[status]' => Comment::STATUS_UNPASS
+                                                $comment->formName() . '[status]' => Comment::STATUS_NOT_PASS
                                             ]
                                         ]);
                                 },
@@ -120,10 +120,10 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Comments');
                                             'data-method' => 'post',
                                             'data-pjax' => '0',
                                             'data-params' => [
-                                                $comment->formName() . '[status]' => Comment::STATUS_UNPASS
+                                                $comment->formName() . '[status]' => Comment::STATUS_NOT_PASS
                                             ]
                                         ]);
-                                    } else if( $model->status == Comment::STATUS_UNPASS ) {
+                                    } else if( $model->status == Comment::STATUS_NOT_PASS ) {
                                         return Html::a('<i class="fa fa-check"></i> ', ['update', 'id' => $model['id']], [
                                             'class' => 'btn-sm',
                                             'data-confirm' => Yii::t('app', 'Are you sure you want to disable this item?'),

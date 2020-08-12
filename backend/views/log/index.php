@@ -8,7 +8,7 @@
 
 /**
  * @var $this yii\web\View
- * @var $dataProvider backend\models\AdminLog
+ * @var $dataProvider common\models\AdminLog
  * @var $searchModel backend\models\search\AdminLogSearch
  */
 
@@ -43,7 +43,7 @@ $this->params['breadcrumbs'][] = Yii::t('app', 'Admin Log');
                         ],
                         [
                             'label' => Yii::t('app', 'Admin'),
-                            'attribute' => 'adminUsername',
+                            'attribute' => 'admin_username',
                             'value' => 'user.username',
                         ],
                         [

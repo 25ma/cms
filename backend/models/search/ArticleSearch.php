@@ -8,17 +8,20 @@
 
 namespace backend\models\search;
 
+use Yii;
 use backend\behaviors\TimeSearchBehavior;
 use backend\components\search\SearchEvent;
-use backend\models\Article;
+use common\models\Article;
 use common\models\Category;
-use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use yii\helpers\ArrayHelper;
 
-class ArticleSearch extends Article
+class ArticleSearch extends Article implements SearchInterface
 {
+
+    public $content;
+
 
     /**
      * @inheritdoc
@@ -50,11 +53,6 @@ class ArticleSearch extends Article
         ];
     }
 
-    public function scenarios()
-    {
-        return Model::scenarios();
-    }
-
     public function behaviors()
     {
         return [
@@ -62,15 +60,20 @@ class ArticleSearch extends Article
         ];
     }
 
+    public function scenarios()
+    {
+        return Model::scenarios();
+    }
+
     /**
-     * @param $params
-     * @param int $type
+     * @param array $params
+     * @param array $options
      * @return ActiveDataProvider
      * @throws \yii\base\InvalidConfigException
      */
-    public function search($params, $type = self::ARTICLE)
+    public function search(array $params = [], array $options = [])
     {
-        $query = Article::find()->select([])->where(['type' => $type])->with('category')->joinWith("articleContent");
+        $query = Article::find()->select([])->where(['type' => $options['type']])->with('category')->joinWith("articleContent");
         /** @var $dataProvider ActiveDataProvider */
         $dataProvider = Yii::createObject([
             'class' => ActiveDataProvider::className(),
@@ -124,7 +127,7 @@ class ArticleSearch extends Article
             $query->andWhere(['cid' => 0]);
         } else {
             if (! empty($this->cid)) {
-                $cids = ArrayHelper::getColumn(Category::getDescendants($this->cid), 'id');
+                $cids = ArrayHelper::getColumn((new Category())->getDescendants($this->cid), 'id');
                 if (count($cids) <= 0) {
                     $query->andFilterWhere(['cid' => $this->cid]);
                 } else {

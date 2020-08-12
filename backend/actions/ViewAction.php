@@ -8,83 +8,61 @@
 
 namespace backend\actions;
 
-
-use Yii;
 use Closure;
-use yii\web\BadRequestHttpException;
+use backend\actions\helpers\Helper;
+use yii\base\Exception;
 
+/**
+ * backend view single record
+ *
+ * Class ViewAction
+ * @package backend\actions
+ */
 class ViewAction extends \yii\base\Action
 {
 
     /**
-     * @var Closure|mixed 模型，如果为模型则直接使用，如果为必包则执行得到模型，为空则实例化modelClass
+     * @var string|array primary key(s) name
      */
-    public $model = null;
+    public $primaryKeyIdentity = 'id';
 
     /**
-     * @var string model类名
+     * @var string primary keys(s) from (GET or POST)
      */
-    public $modelClass;
+    public $primaryKeyFromMethod = "GET";
 
-    /**
-     * @var string 场景
-     */
-    public $scenario = 'default';
-
-    /** @var array|Closure 分配到模板中去的变量 */
+    /** @var array|Closure variables will assigned to view */
     public $data;
 
     /**
-     * @var string 模板路径，默认为action id
+     * @var string view template file path, default is action id
      */
     public $viewFile = 'view';
 
 
     /**
-     * view详情页
+     * view detail page
      *
      * @return string
-     * @throws BadRequestHttpException
+     * @throws Exception
      */
     public function run()
     {
-        $model = $this->getModel();
-        if (! $model) throw new BadRequestHttpException(Yii::t('app', "Cannot find model"));
-        $data = [
-            'model' => $model,
-        ];
         if( is_array($this->data) ){
-            $data = array_merge($data, $this->data);
+            $data = $this->data;
         }else if ($this->data instanceof Closure){
-            $data = call_user_func_array($this->data, [$model, $this]);
+            //according assigned HTTP Method and param name to get value. will be passed to $this->data closure.Often use for get value of primary key.
+            $primaryKeys = Helper::getPrimaryKeys($this->primaryKeyIdentity, $this->primaryKeyFromMethod);
+            $getDataParams = $primaryKeys;
+            array_push($getDataParams, $this);
+            $data = call_user_func_array($this->data, $getDataParams);
+            if( !is_array($data) ){
+                throw new Exception(__CLASS__ . "::data closure must return array");
+            }
+        }else{
+            throw new Exception(__CLASS__ . "::data only allows array or closure (with return array)");
         }
+
         return $this->controller->render($this->viewFile, $data);
     }
-
-    public function getModel()
-    {
-        if( $this->model === null ) {
-            /* @var $model \yii\db\ActiveRecord */
-            $model = Yii::createObject([
-                'class' => $this->modelClass,
-            ]);
-            $primaryKeys = $model->getPrimaryKey(true);
-            $condition = [];
-            foreach ($primaryKeys as $key => $abandon) {
-                $condition[$key] = Yii::$app->getRequest()->get($key, null);
-                if( $condition[$key] === null ){
-                    unset($condition[$key]);
-                }
-            }
-            $model = call_user_func([$this->modelClass, 'findOne'], $condition);
-            $model->setScenario( $this->scenario );
-        }else{
-            $model = $this->model;
-            if( $this->model instanceof Closure){
-                $model = call_user_func($this->model);
-            }
-        }
-        return $model;
-    }
-
 }

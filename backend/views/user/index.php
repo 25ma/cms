@@ -9,12 +9,12 @@
 /**
  * @var $this yii\web\View
  * @var $dataProvider yii\data\ActiveDataProvider
- * @var $searchModel backend\models\search\UserSearch
+ * @var $searchModel backend\models\search\AdminUserSearch
  */
 
 use backend\grid\DateColumn;
 use backend\grid\GridView;
-use frontend\models\User;
+use common\models\User;
 use backend\widgets\Bar;
 use backend\grid\CheckboxColumn;
 use backend\grid\ActionColumn;

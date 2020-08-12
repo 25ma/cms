@@ -8,12 +8,14 @@
 
 /**
  * @var $this yii\web\View
- * @var $model backend\models\User
+ * @var $model common\models\AdminUser
+ * @var $assignModel backend\models\form\AssignPermissionForm
+ * @var $permissions []
+ * @var $roles []
  */
 
-use backend\models\form\RbacForm;
 use backend\widgets\ActiveForm;
-use backend\models\User;
+use common\models\AdminUser;
 use common\widgets\JsBlock;
 use yii\helpers\Html;
 
@@ -38,40 +40,32 @@ $this->title = "Admin";
                 <div class="hr-line-dashed"></div>
                 <?= $form->field($model, 'password')->passwordInput(['maxlength' => 512]) ?>
                 <div class="hr-line-dashed"></div>
-                <?= $form->field($model, 'status')->radioList( User::getStatuses() ) ?>
+                <?= $form->field($model, 'status')->radioList( AdminUser::getStatuses() ) ?>
                 <div class="hr-line-dashed"></div>
-                <?php
-                    $roles = Yii::$app->getAuthManager()->getRoles();
-                    $temp = [];
-                    foreach (array_keys($roles) as $key){
-                        $temp[$key] = $key;
-                    }
-                ?>
                 <?php
                     $itemsOptions = [];
                     if(in_array( $model->getId(), Yii::$app->getBehavior('access')->superAdminUserIds)){
                         $itemsOptions = ['disabled'=>'true'];
                     }
                 ?>
-                <?= $form->field($model, 'roles', [
+                <?= $form->field($assignModel, 'roles', [
                     'labelOptions' => [
                         'label' => Yii::t('app', 'Roles'),
                     ]
-                ])->checkboxList($temp, ['itemOptions'=>$itemsOptions]) ?>
+                ])->checkboxList($roles, ['itemOptions'=>$itemsOptions]) ?>
                 <div class="hr-line-dashed"></div>
                 <div class="form-group field-permissions">
                     <span class="col-sm-2 control-label checkbox checkbox-success"><?= Html::checkbox("", false, ['id'=>'permission-all','class'=>'chooseAll'])?><label for='permission-all'><h4><?=Yii::t('app', 'Permissions')?></h4></label></span>
                     <div class="col-sm-10">
                         <?php
-                        $rbac = new RbacForm();
-                        foreach ($rbac->getPermissionsByGroup('form') as $key => $value){
+                        foreach ($permissions as $key => $value){
                             echo "<div class='col-sm-1 text-left'><span class='checkbox checkbox-success checkbox-inline'>" . Html::checkbox("", false, ['id'=>"permission-all-{$key}", 'class'=>'chooseAll']) . "<label for='permission-all-{$key}'><h4>{$key}</h4></label></span></div>";
                             echo "<div class='col-sm-11'>";
                             foreach ($value as $k => $val){
                                 echo "<div class='col-sm-1 text-left'><span class='checkbox checkbox-success checkbox-inline'>" . Html::checkbox("", false, ['id'=>"permission-all-{$k}", 'class'=>'chooseAll']) . "<label for='permission-all-{$k}'><h5>{$k}</h5></label></span></div>";
                                 echo "<div class='col-sm-11'>";
                                 foreach ($val as $v) {
-                                    echo $form->field($model, "permissions[{$v['name']}]", ['options'=>['style'=>'display:inline'], 'labelOptions'=>['class'=>'col-sm-12 control-label']])->checkbox(['value'=>$v['name']])->label($v['description']);
+                                    echo $form->field($assignModel, "permissions[{$v['name']}]", ['options'=>['style'=>'display:inline'], 'labelOptions'=>['class'=>'col-sm-12 control-label']])->checkbox(['value'=>$v['name']])->label($v['description']);
                                 }
                                 echo "</div><div class='col-sm-12' style='height: 20px'></div>";
                             }

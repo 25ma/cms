@@ -10,6 +10,7 @@ namespace common\models;
 
 use Yii;
 use yii\behaviors\TimestampBehavior;
+use yii\helpers\Html;
 
 /**
  * This is the model class for table "{{%comment}}".
@@ -26,13 +27,14 @@ use yii\behaviors\TimestampBehavior;
  * @property integer $status
  * @property integer $created_at
  * @property integer $updated_at
+ * @property Article $article
  */
 class Comment extends \yii\db\ActiveRecord
 {
 
     const STATUS_INIT = 0;
     const STATUS_PASSED = 1;
-    const STATUS_UNPASS = 2;
+    const STATUS_NOT_PASS = 2;
 
 
     /**
@@ -190,4 +192,57 @@ class Comment extends \yii\db\ActiveRecord
 
     }
 
+    public function afterDelete()
+    {
+        $model = Article::findOne($this->aid);
+        $model->comment_count -= 1;
+        $model->save(false);
+        parent::afterDelete();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function beforeSave($insert)
+    {
+        if ($insert) {
+            if (Yii::$app->feehi->website_comment) {
+                if (! Article::find()->where(['id' => $this->aid])->one()['can_comment']) {
+                    $this->addError('content', Yii::t('frontend', 'This article is not allowed to comment'));
+                    return false;
+                }
+                if (Yii::$app->feehi->website_comment_need_verify) {
+                    $this->status = self::STATUS_INIT;
+                } else {
+                    $this->status = self::STATUS_PASSED;
+                }
+                $this->ip = Yii::$app->getRequest()->getUserIP();
+                $this->uid = Yii::$app->getUser()->getIsGuest() ? 0 : Yii::$app->getUser()->getId();
+            } else {
+                $this->addError('content', Yii::t('frontend', 'Website closed comment'));
+                return false;
+            }
+        }
+        $this->nickname = Html::encode($this->nickname);
+        $this->email = Html::encode($this->email);
+        if (stripos($this->website_url, 'http://') !== 0 && stripos($this->website_url, 'https://') !== 0) {
+            $this->website_url = "http://" . $this->website_url;
+        }
+        $this->website_url = Html::encode($this->website_url);
+        $this->content = Html::encode($this->content);
+        return parent::beforeSave($insert);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        if ($insert) {
+            $model = Article::findOne($this->aid);
+            $model->comment_count += 1;
+            $model->save(false);
+        }
+        parent::afterSave($insert, $changedAttributes);
+    }
 }

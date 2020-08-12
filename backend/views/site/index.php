@@ -6,8 +6,9 @@
  * Created at: 2017-03-15 21:16
  */
 
-/* @var $this \yii\web\View */
+/* @var $this yii\web\View */
 /* @var $content string */
+/* @var $identity common\models\AdminUser */
 
 use common\helpers\FileDependencyHelper;
 use yii\caching\FileDependency;
@@ -18,8 +19,6 @@ use backend\assets\IndexAsset;
 
 IndexAsset::register($this);
 $this->title = Yii::t('app', 'Backend Manage System');
-/** @var \backend\models\User $identity */
-$identity = Yii::$app->getUser()->getIdentity();
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
@@ -32,20 +31,26 @@ $identity = Yii::$app->getUser()->getIdentity();
     <title><?= Html::encode($this->title) ?></title>
     <?php $this->head() ?>
     <link rel="icon" href="<?= Yii::$app->getRequest()->getHostInfo() ?>/favicon.ico" type="image/x-icon"/>
+    <style>
+        body {
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">
+<body class="fixed-sidebar full-height-layout gray-bg">
 <?php $this->beginBody() ?>
 <div id="wrapper">
-    <!--左侧导航开始-->
+    <!--left nav section start-->
     <nav class="navbar-default navbar-static-side" role="navigation">
-        <div class="nav-close"><i class="fa fa-times-circle"></i>
+        <div class="nav-close">
+            <i class="fa fa-times-circle"></i>
         </div>
         <div class="sidebar-collapse">
             <ul class="nav" id="side-menu">
                 <li class="nav-header">
                     <div class="dropdown profile-element">
                         <span>
-                            <img alt="image" class="img-circle" width="64px" height="64px" src="<?php if ($identity->avatar) {echo Yii::$app->params['site']['url'] . $identity->avatar;} else {echo Yii::$app->getRequest()->getBaseUrl() . '/static/img/profile_small.jpg';} ?>"/>
+                            <img alt="image" class="img-circle" width="64px" height="64px" src="<?=$identity->getAvatarUrl()?>"/>
                         </span>
                         <a data-toggle="dropdown" class="dropdown-toggle" href="#">
                             <span class="clear">
@@ -54,7 +59,7 @@ $identity = Yii::$app->getUser()->getIdentity();
                             </span>
                         </a>
                         <ul class="dropdown-menu animated fadeInRight m-t-xs">
-                            <li><a class="J_menuItem" href="<?= Url::to(['admin-user/update-self']) ?>"><?= Yii::t('app', 'Profile') ?></a></li>
+                            <li><a class="J_menuItem" href="<?= Url::to(['admin-user/self-update']) ?>"><?= Yii::t('app', 'Profile') ?></a></li>
                             <li><a class="J_menuItem" href="<?= Url::to(['article/index']) ?>"><?= Yii::t('app', 'Articles') ?></a></li>
                             <li><a target="_blank" href="<?= Yii::$app->params['site']['url'] ?>"><?= Yii::t('app', 'Frontend') ?></a></li>
                             <li class="divider"></li>
@@ -64,13 +69,14 @@ $identity = Yii::$app->getUser()->getIdentity();
                     <div class="logo-element">H+</div>
                 </li>
                 <?php
+                /** @var FileDependencyHelper $cacheDependencyObject */
                 $cacheDependencyObject = Yii::createObject([
                     'class' => FileDependencyHelper::className(),
-                    'fileName' => 'backend_menu.txt',
+                    'fileName' => \common\models\Menu::MENU_CACHE_DEPENDENCY_FILE,
                 ]);
                 $dependency = [
                     'class' => FileDependency::className(),
-                    'fileName' => $cacheDependencyObject->createFile(),
+                    'fileName' => $cacheDependencyObject->createFileIfNotExists(),
                 ];
                 if ($this->beginCache('backend_menu', [
                     'variations' => [
@@ -81,14 +87,16 @@ $identity = Yii::$app->getUser()->getIdentity();
                 ])
                 )
                 {?>
-                    <?= Menu::widget() ?>
+                    <?= Menu::widget([
+                            'menus' => $menus,
+                ]) ?>
                     <?php $this->endCache();
                 } ?>
             </ul>
         </div>
     </nav>
-    <!--左侧导航结束-->
-    <!--右侧部分开始-->
+    <!--left nav section end-->
+    <!--right section start-->
     <div id="page-wrapper" class="gray-bg dashbard-1">
         <div class="row border-bottom">
             <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
@@ -109,18 +117,7 @@ $identity = Yii::$app->getUser()->getIdentity();
                         <a class="right-sidebar-toggle" aria-expanded="false"><i class="fa fa-tasks"></i> <?= Yii::t('app', 'Theme') ?></a>
                     </li>
                     <li class="hidden-xs">
-                        <select onchange="location.href=this.options[this.selectedIndex].value;">
-                            <option
-                                <?php if (Yii::$app->language == 'zh-CN') {
-                                echo 'selected';
-                                } ?> value="<?= Url::to(['site/language', 'lang' => 'zh-CN']) ?>">简体中文
-                            </option>
-                            <option
-                                <?php if (Yii::$app->language == 'en-US') {
-                                    echo "selected";
-                                } ?> value="<?= Url::to(['site/language', 'lang' => 'en-US']) ?>">English
-                            </option>
-                        </select>
+                        <?= $this->render("/widgets/_language-select") ?>
                     </li>
                 </ul>
             </nav>
@@ -152,8 +149,8 @@ $identity = Yii::$app->getUser()->getIdentity();
             <div class="pull-right">&copy; 2015-<?=date('Y')?> <a href="http://blog.feehi.com/" target="_blank">feehi</a></div>
         </div>
     </div>
-    <!--右侧部分结束-->
-    <!--右侧边栏开始-->
+    <!--right section end-->
+    <!--right section sidebar start (not enabled yet)-->
     <div id="right-sidebar">
         <div class="sidebar-container">
             <ul class="nav nav-tabs navs-3">
@@ -250,6 +247,7 @@ $identity = Yii::$app->getUser()->getIdentity();
             </div>
         </div>
     </div>
+    <!--right section sidebar end (not enabled yet)-->
 <?php $this->endBody() ?>
 </body>
 <script>
